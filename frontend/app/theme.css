@@ -1,0 +1,194 @@
+/* Burnt-orange, charcoal, and cream surfaces and typography; the layout remains in globals.css. */
+:root {
+  color-scheme: light;
+  --surface: #FFFFFF;
+  --accent: #B94720;
+  --cream: #FFF8F2;
+  --soft-grey: #756D68;
+  --charcoal: #242424;
+  --peach: #F5DFD1;
+  --highlight: #B94720;
+}
+
+body { font-size: 16px; }
+::selection { background: #F5DFD1; color: #FFF8F2; }
+.header { position: sticky; top: 0; z-index: 100; height: auto; padding-top: 8px; padding-bottom: 8px; background: var(--charcoal); box-shadow: 0 0 0 100vmax var(--charcoal); clip-path: inset(0 -100vmax); border-bottom: 1px solid var(--line); }
+html { scroll-padding-top: 80px; }
+.header nav, .host-link { font-size: 14px; }
+.header nav a, .host-link { transition: color 180ms ease; }
+.demo-bar { border-bottom: 1px solid var(--line); }
+.demo-bar, .demo-bar span { font-size: 11px; }
+h1, h2 { font-weight: 500; letter-spacing: -.025em; }
+h3 { font-family: var(--serif); font-size: 25px; font-weight: 600; }
+.hero h1 em { color: var(--peach); }
+.hero-copy > p { font-size: 16px; line-height: 1.75; }
+.hero-note { font-size: 12px; }
+.eyebrow { color: var(--peach); font-size: 11px; }
+.hero-photo, .detail-photos { border: 1px solid #E5D8CF; box-shadow: 0 12px 35px #B9472014; }
+.photo-caption { color: #FFF8F2; font-weight: 500; text-shadow: 0 2px 10px #FFF8F2; }
+.photo-label { color: #242424; border: 1px solid #E5D8CF; }
+.photo-label, .category-badge { font-size: 10px; }
+.photo-circle { background: #24242470; }
+.search-bar, .booking-panel, .panel, .booking-item, .stats-grid > div { box-shadow: 0 8px 24px #B947200d; }
+.search-bar label span { font-size: 10px; color: var(--peach); }
+.search-bar input { font-size: 15px; }
+.search-footnote { font-size: 12px; }
+input, select, textarea { font-size: 16px; transition: border-color 180ms ease, box-shadow 180ms ease; }
+input::placeholder, textarea::placeholder { color: #6D655F; opacity: 1; }
+input:hover, select:hover, textarea:hover { border-color: #AA8A78; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--highlight); outline-offset: 3px; }
+input:-webkit-autofill { -webkit-text-fill-color: #242424; box-shadow: 0 0 0 1000px #FFFFFF inset; caret-color: #242424; }
+label, .role-picker legend { font-size: 14px; }
+.button { transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease; min-height: 44px; }
+.button-primary, .button-light { font-weight: 650; box-shadow: 0 3px 12px #B947200d; }
+.button-primary:hover, .button-light:hover { background: #F5DFD1; border-color: #F5DFD1; box-shadow: 0 6px 16px #B9472021; }
+.button-outline:hover { border-color: var(--peach); }
+.button:disabled { transform: none; box-shadow: none; }
+.small, .search-button { font-size: 13px; }
+.category-tabs button { font-size: 13px; min-height: 44px; transition: background 180ms ease, border-color 180ms ease, color 180ms ease; }
+.category-tabs button.active:hover { background: #963819; }
+.results-caption { font-size: 12px; }
+.venue-card { background: var(--charcoal); transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
+.venue-card:hover { transform: translateY(-3px); border-color: #B94720; box-shadow: 0 14px 30px #B9472021; }
+.card-image { isolation: isolate; }
+.category-badge { color: #242424; border: 1px solid #ffffff70; backdrop-filter: blur(6px); }
+.card-arrow { color: #242424; transition: background 180ms ease; }
+.venue-card:hover .card-arrow { background: #F5DFD1; }
+.card-body h3 { font-size: 29px; font-weight: 600; letter-spacing: -.02em; }
+.location, .capacity { font-size: 12px; }
+.capacity { flex-wrap: wrap; }
+.card-bottom { gap: 8px; font-size: 12px; }
+.card-bottom strong { font-size: 18px; }
+.view-link { font-size: 11px; }
+.how-section > div > p, .step p { font-size: 14px; }
+.step h3 { font-size: 24px; }
+.step > span { font-size: 29px; }
+.host-banner { border: 1px solid #E4C6B5; box-shadow: 0 10px 28px #B947200d; }
+.host-banner p { font-size: 14px; }
+.host-banner .eyebrow { font-size: 10px; }
+.host-banner .button { font-size: 14px; }
+footer { background: var(--charcoal); font-size: 12px; }
+footer small { font-size: 11px; }
+.filter-panel, .demo-accounts { background: var(--surface); }
+.auth-story { border: 1px solid #E4C6B5; }
+.auth-story p, .auth-card > .muted, .auth-switch { font-size: 14px; }
+.auth-story .eyebrow, .auth-card .eyebrow { font-size: 10px; }
+.role-picker button { font-size: 13px; min-height: 44px; }
+.role-picker .active { color: #B94720; }
+.demo-accounts { font-size: 13px; border: 1px solid var(--line); }
+.form-note, .booking-note, .booking-panel > .muted { font-size: 13px; }
+.detail-info h3 { font-size: 26px; }
+.facilities span, .price-row, .detail-title .location { font-size: 14px; }
+.verified, .back-link { font-size: 13px; }
+.dashboard-heading p, .dashboard-tabs button { font-size: 14px; }
+.booking-item h3, .vendor-list h3 { font-size: 25px; }
+.booking-item p, .panel > p { font-size: 14px; }
+.booking-item small { font-size: 11px; }
+.status { font-size: 11px; border: 1px solid #E5D8CF; }
+.availability-form label { font-size: 12px; }
+.availability-form input, .availability-form select { font-size: 14px; }
+.stats-grid span { font-size: 13px; }
+.error-message, .success-message, .success-text { font-size: 14px; }
+
+/* Color roles: burnt-orange actions, white surfaces, cream canvas, peach highlights. */
+.header {
+  background: var(--charcoal);
+  color: var(--cream);
+  box-shadow: 0 0 0 100vmax var(--charcoal);
+  border-bottom-color: #44403D;
+}
+.header .button-outline { background: transparent; color: var(--cream); border-color: #B8ADA6; }
+.header .button-outline:hover { background: #3A3531; border-color: var(--highlight); }
+.header nav a:hover, .header .host-link:hover { color: #F2AE83; }
+.brand-icon, .brand-dot, .tiny-star, .hero-doodle, .orange { color: var(--highlight); }
+.hero h1 em, .auth-story h1 em { color: var(--accent); }
+.eyebrow, .host-banner .eyebrow, .search-bar label span { color: #86513A; }
+.demo-bar { background: #F8EDE5; color: #716157; }
+.search-bar, .venue-card, .booking-panel, .panel, .booking-item, .stats-grid > div { background: var(--surface); }
+.button-primary, .button-light {
+  background: var(--accent);
+  color: #FFFFFF;
+  border: 1px solid var(--accent);
+}
+.button-primary:hover, .button-light:hover { background: #963819; color: #FFFFFF; border-color: #963819; }
+.button-outline { background: #FFFFFF; color: var(--accent); }
+.button-outline:hover, .button-outline.selected { background: var(--peach); border-color: #B77B5B; }
+.text-button, .view-link, .auth-switch a, .loading-page a { color: var(--accent); }
+.text-button:hover, .view-link:hover, .auth-switch a:hover { color: #963819; }
+.category-tabs button { background: #F8EDE5; color: #754A36; border-color: #F5DFD1; }
+.category-tabs button:hover { background: var(--peach); border-color: #B77B5B; }
+.category-tabs button.active, .role-picker .active { background: var(--accent); color: #FFFFFF; border-color: var(--accent); }
+.category-tabs button.active:hover { background: #963819; }
+.category-badge { background: #F5DFD1F2; color: var(--accent); border-color: #FFFFFF90; }
+.card-arrow { background: #B94720B3; color: #FFFFFF; }
+.venue-card:hover .card-arrow { background: var(--accent); color: #FFFFFF; }
+.venue-card { box-shadow: 0 4px 16px #B9472009; }
+.venue-card:hover { border-color: #D49A77; box-shadow: 0 12px 28px #B947201c; }
+.photo-label { background: #FFF8F2ED; color: var(--accent); border-color: #FFFFFF90; }
+.live-dot { background: var(--accent); }
+.photo-caption { color: #FFFFFF; text-shadow: 0 2px 10px #B94720; }
+.photo-circle { color: #FFFFFF; background: #B9472066; }
+.note-icon, .booking-calendar { background: var(--peach); color: var(--accent); }
+.search-bar label span svg, .location svg, .capacity svg { color: #886B59; }
+.host-banner, .auth-story { background: var(--peach); }
+.host-banner p, .auth-story p { color: #72513F; }
+.step > span { color: #9B4929; }
+.filter-panel, .demo-accounts { background: #F8EDE5; }
+.verified, .facilities svg { color: var(--accent); }
+input, select, textarea { background: #FFFFFF; color: var(--ink); border-color: #BCA99C; }
+.search-bar input { color: var(--ink); }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline-color: var(--accent); }
+input:-webkit-autofill { -webkit-text-fill-color: #242424; box-shadow: 0 0 0 1000px #FFFFFF inset; caret-color: #242424; }
+footer { background: #242424; color: #6D655F; }
+.footer-brand { color: var(--accent); }
+::selection { background: var(--peach); color: var(--accent); }
+
+@media (max-width: 1100px) {
+  .header-actions { gap: 18px; }
+  .header nav { gap: 22px; }
+  .hero-copy .eyebrow { font-size: 10px; }
+  .card-body h3 { font-size: 26px; }
+  .card-bottom { flex-wrap: wrap; }
+}
+
+@media (max-width: 760px) {
+  .header { padding-top: 6px; padding-bottom: 6px; }
+  .header nav { font-size: 13px; }
+  .header-actions .button { font-size: 12px; }
+  .hero h1 { font-size: clamp(42px, 8.5vw, 57px); }
+  .hero-copy .eyebrow, .section-heading .eyebrow, .how-section .eyebrow { font-size: 10px; letter-spacing: 1px; }
+  .hero-note { font-size: 11px; flex-wrap: wrap; }
+  .hero-doodle { font-size: 36px; top: 20px; right: 18px; }
+  .hero-copy .eyebrow { padding-right: 34px; }
+  .hero-copy > p { font-size: 16px; }
+  .photo-label { font-size: 9px; }
+  .search-bar input { font-size: 16px; }
+  .search-bar label span { font-size: 10px; }
+  .search-button { min-height: 46px; }
+  .section-heading .button { font-size: 12px; }
+  .category-tabs button { font-size: 13px; }
+  .results-caption { font-size: 12px; gap: 12px; flex-wrap: wrap; }
+  .results-caption span:last-child { font-size: 12px; }
+  .location, .card-body .location, .capacity { font-size: 12px; }
+  .card-body h3 { font-size: 26px; }
+  .card-bottom strong { font-size: 18px; }
+  .view-link { font-size: 11px; }
+  .host-banner .eyebrow { font-size: 10px; }
+  footer > span { font-size: 12px; }
+  .detail-title .location { font-size: 13px; }
+  .dashboard-heading p { font-size: 13px; }
+  .dashboard-heading .button { font-size: 12px; }
+  .booking-item h3 { font-size: 24px; }
+  .booking-item-end .button { font-size: 12px; }
+  .availability-form { flex-wrap: wrap; }
+  .availability-form input, .availability-form select { font-size: 16px; }
+  .availability-form button { height: auto; }
+  .stats-grid span { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .venue-card:hover, .button:hover { transform: none; }
+}
+
+/* Warm accents remain legible against the charcoal navigation. */
+.header .brand-icon, .header .brand-dot { color: #F2AE83; }

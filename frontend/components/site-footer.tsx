@@ -1,0 +1,6 @@
+import Link from 'next/link';
+import { site, socialLinks } from '@/lib/site-content';
+
+export default function SiteFooter() {
+  return <footer className="site-footer"><div className="footer-about"><Link href="/" className="footer-brand">celebratecg.</Link><span className="eyebrow">PLAN • BOOK • CELEBRATE</span><p>{site.description}</p></div><nav aria-label="Explore CelebrateCG"><h3>Explore</h3>{[['Why CelebrateCG', 'why'], ['Categories', 'categories'], ['Cities & map', 'cities'], ['Launch benefits', 'benefits'], ['Referral rewards', 'referral'], ['FAQ', 'faq'], ['Contact', 'contact']].map(([name, id]) => <Link key={id} href={`/#${id}`}>{name}</Link>)}</nav><div className="footer-contact"><h3>Follow the launch</h3><a href={site.whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp: {site.phone}</a><a href={`mailto:${site.email}`}>{site.email}</a><div className="social-links">{socialLinks.map(([name, url]) => <a key={name} href={url} target="_blank" rel="noopener noreferrer">{name}</a>)}</div><a className="text-button" href={site.signup}>Create an account ↗</a></div><div className="footer-bottom"><span>© {new Date().getFullYear()} CelebrateCG. All rights reserved.</span><span>Made in Chhattisgarh.</span></div></footer>;
+}
