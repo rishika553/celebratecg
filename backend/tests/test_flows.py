@@ -129,6 +129,42 @@ def test_vendor_admin_customer_approval_loop(context):
     assert client.post('/api/bookings', json=payload(context, venue_id=venue_id)).status_code == 201
 
 
+def test_vendor_photo_upload_order_remove_and_reapproval(context):
+    client = context['client']
+    login(client, 'vendor')
+    files = [
+        ('files', ('garden.png', b'\x89PNG\r\n\x1a\nphoto-one', 'image/png')),
+        ('files', ('hall.webp', b'RIFF\x08\x00\x00\x00WEBPphoto-two', 'image/webp')),
+    ]
+    uploaded = client.post(f'/api/vendor/venues/{context["venue_id"]}/photos', files=files)
+    assert uploaded.status_code == 201, uploaded.text
+    venue = uploaded.json()
+    assert venue['approval_status'] == 'pending'
+    assert len(venue['photo_items']) == 2
+    assert all(photo['url'].startswith('/api/media/venues/') for photo in venue['photo_items'])
+    assert client.get(venue['photo_items'][0]['url']).status_code == 200
+    assert client.get(f'/api/venues/{context["venue_id"]}').status_code == 404
+
+    reversed_ids = [photo['id'] for photo in reversed(venue['photo_items'])]
+    ordered = client.put(f'/api/vendor/venues/{context["venue_id"]}/photos/order', json={'photo_ids': reversed_ids})
+    assert ordered.status_code == 200
+    assert [photo['id'] for photo in ordered.json()['photo_items']] == reversed_ids
+
+    removed = client.delete(f'/api/vendor/venues/{context["venue_id"]}/photos/{reversed_ids[0]}')
+    assert removed.status_code == 200
+    assert len(removed.json()['photo_items']) == 1
+
+
+def test_photo_upload_rejects_invalid_content_and_wrong_owner(context):
+    client = context['client']
+    login(client, 'vendor')
+    invalid = client.post(f'/api/vendor/venues/{context["venue_id"]}/photos', files={'files': ('fake.jpg', b'not-an-image', 'image/jpeg')})
+    assert invalid.status_code == 422
+    login(client, 'intruder')
+    forbidden = client.post(f'/api/vendor/venues/{context["venue_id"]}/photos', files={'files': ('photo.png', b'\x89PNG\r\n\x1a\nvalid', 'image/png')})
+    assert forbidden.status_code == 404
+
+
 def add_payment(context, booking_id):
     with context['sessions']() as db:
         payment = Payment(booking_id=booking_id, razorpay_order_id='order_test', amount=45000)

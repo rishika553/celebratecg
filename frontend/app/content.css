@@ -161,3 +161,15 @@
   #why, #benefits, .faq-section { padding-top: 30px; padding-bottom: 30px; border-radius: 0; }
   .value-card, .benefit-card { padding: 24px; }
 }
+.venue-form input[type="file"] { padding: 10px; background: var(--cream); }
+.venue-form label small { display: block; color: var(--muted); margin: -12px 0 18px; font-size: 10px; }
+.photo-manager { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 16px 0; }
+.photo-manager > div { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--cream); }
+.photo-manager img { display: block; width: 100%; height: 85px; object-fit: cover; }
+.photo-manager span { display: block; padding: 6px 8px 0; font-size: 10px; color: var(--muted); }
+.photo-manager > div > div { display: flex; justify-content: space-between; padding: 4px; }
+.photo-manager button { display: grid; place-items: center; min-width: 30px; min-height: 30px; color: var(--accent); border-radius: 4px; }
+.photo-manager button:hover:not(:disabled) { background: var(--peach); }
+.approval-photos { display: flex; gap: 7px; overflow-x: auto; margin: -10px -10px 18px; }
+.approval-photos img { width: 105px; height: 75px; object-fit: cover; border-radius: 5px; }
+@media(max-width:760px) { .photo-manager { grid-template-columns: repeat(2,minmax(0,1fr)); } }

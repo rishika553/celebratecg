@@ -13,10 +13,12 @@ from app.auth import passwords
 from app.db import Base, get_db
 from app.main import app, login_attempts
 from app.models import Category, User, Venue
+from app.storage import objects
 
 
 @pytest.fixture
 def context(tmp_path):
+    objects.cfg.storage_local_dir = str(tmp_path / 'uploads')
     engine = create_engine(f'sqlite:///{tmp_path / "test.db"}', connect_args={'check_same_thread': False, 'timeout': 20})
     Base.metadata.create_all(engine)
     sessions = sessionmaker(bind=engine, expire_on_commit=False)

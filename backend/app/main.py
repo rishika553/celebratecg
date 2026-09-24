@@ -6,19 +6,20 @@ import hashlib
 import hmac
 import json
 import time
-from uuid import UUID
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .auth import current_user, dummy_hash, passwords, role, set_session, user_view
 from .config import settings
-from .contracts import ApprovalInput, AvailabilityInput, BookingInput, Login, Signup, VenueInput, VerifyPayment
+from .contracts import ApprovalInput, AvailabilityInput, BookingInput, Login, PhotoOrderInput, Signup, VenueInput, VerifyPayment
 from .db import get_db
 from .models import Availability, Booking, Category, Payment, User, Venue, VenuePhoto, now
+from .storage import objects
 
 
 @asynccontextmanager
@@ -66,8 +67,31 @@ def venue_view(db, venue):
     return {'id': venue.id, 'name': venue.name, 'description': venue.description, 'location_text': venue.location_text,
             'price_per_day': str(venue.price_per_day), 'max_guests': venue.max_guests, 'facilities': venue.facilities,
             'category': category.name, 'category_id': venue.category_id, 'category_slug': category.slug,
-            'photos': [photo.url for photo in photos], 'rules': venue.rules, 'cancellation_policy': venue.cancellation_policy,
+            'photos': [photo_url(photo) for photo in photos],
+            'photo_items': [{'id': photo.id, 'url': photo_url(photo), 'sort_order': photo.sort_order} for photo in photos],
+            'rules': venue.rules, 'cancellation_policy': venue.cancellation_policy,
             'approval_status': venue.approval_status}
+
+
+def photo_url(photo):
+    return f'/api/media/{photo.url.removeprefix("object://")}' if photo.url.startswith('object://') else photo.url
+
+
+def owned_venue(db, venue_id, user):
+    venue = db.get(Venue, str(venue_id))
+    if not venue or venue.vendor_id != user.id:
+        raise HTTPException(404, 'Venue not found.')
+    return venue
+
+
+def image_kind(data: bytes):
+    if data.startswith(b'\xff\xd8\xff'):
+        return 'image/jpeg', 'jpg'
+    if data.startswith(b'\x89PNG\r\n\x1a\n'):
+        return 'image/png', 'png'
+    if len(data) >= 12 and data[:4] == b'RIFF' and data[8:12] == b'WEBP':
+        return 'image/webp', 'webp'
+    raise HTTPException(422, 'Only JPEG, PNG, and WebP images are accepted.')
 
 
 def public_venue(db, venue_id):
@@ -98,6 +122,17 @@ def own_booking(db, booking_id, user):
 @app.get('/api/health')
 def health():
     return {'status': 'ok', 'demo_mode': settings().demo_mode, 'payments_enabled': bool(settings().razorpay_key_id and settings().razorpay_key_secret)}
+
+
+@app.get('/api/media/{key:path}')
+def media(key: str):
+    if not key.startswith('venues/') or '..' in key.split('/'):
+        raise HTTPException(404, 'Image not found.')
+    try:
+        data, content_type = objects.get(key)
+    except (FileNotFoundError, ValueError):
+        raise HTTPException(404, 'Image not found.')
+    return Response(data, media_type=content_type, headers={'Cache-Control': 'public, max-age=31536000, immutable'})
 
 
 @app.post('/api/auth/signup', status_code=201)
@@ -255,10 +290,79 @@ def add_venue(data: VenueInput, user: User = Depends(role('vendor')), db: Sessio
 
 @app.put('/api/vendor/venues/{venue_id}')
 def edit_venue(venue_id: UUID, data: VenueInput, user: User = Depends(role('vendor')), db: Session = Depends(get_db)):
-    venue = db.get(Venue, str(venue_id))
-    if not venue or venue.vendor_id != user.id:
-        raise HTTPException(404, 'Venue not found.')
+    venue = owned_venue(db, venue_id, user)
     return apply_venue(db, data, venue)
+
+
+@app.post('/api/vendor/venues/{venue_id}/photos', status_code=201)
+async def upload_photos(venue_id: UUID, files: list[UploadFile] = File(...), user: User = Depends(role('vendor')), db: Session = Depends(get_db)):
+    venue = owned_venue(db, venue_id, user)
+    existing = db.scalars(select(VenuePhoto).where(VenuePhoto.venue_id == venue.id)).all()
+    if not files or len(existing) + len(files) > 10:
+        raise HTTPException(422, 'A venue can have between 1 and 10 photos.')
+    prepared = []
+    for upload in files:
+        data = await upload.read(8 * 1024 * 1024 + 1)
+        if len(data) > 8 * 1024 * 1024:
+            raise HTTPException(413, 'Each photo must be 8 MB or smaller.')
+        content_type, extension = image_kind(data)
+        if upload.content_type and upload.content_type not in ('image/jpeg', 'image/png', 'image/webp'):
+            raise HTTPException(422, 'Only JPEG, PNG, and WebP images are accepted.')
+        prepared.append((f'venues/{venue.id}/{uuid4().hex}.{extension}', data, content_type))
+    created = []
+    try:
+        for offset, (key, data, content_type) in enumerate(prepared):
+            objects.put(key, data, content_type)
+            photo = VenuePhoto(venue_id=venue.id, url=f'object://{key}', sort_order=len(existing) + offset)
+            db.add(photo)
+            created.append(photo)
+        venue.approval_status = 'pending'
+        db.commit()
+    except Exception:
+        db.rollback()
+        for key, _, _ in prepared:
+            try:
+                objects.delete(key)
+            except Exception:
+                pass
+        raise
+    return venue_view(db, venue)
+
+
+@app.put('/api/vendor/venues/{venue_id}/photos/order')
+def reorder_photos(venue_id: UUID, data: PhotoOrderInput, user: User = Depends(role('vendor')), db: Session = Depends(get_db)):
+    venue = owned_venue(db, venue_id, user)
+    photos = db.scalars(select(VenuePhoto).where(VenuePhoto.venue_id == venue.id)).all()
+    if set(map(str, data.photo_ids)) != {photo.id for photo in photos} or len(data.photo_ids) != len(photos):
+        raise HTTPException(422, 'Photo order must include every venue photo exactly once.')
+    by_id = {photo.id: photo for photo in photos}
+    for index, photo_id in enumerate(data.photo_ids):
+        by_id[str(photo_id)].sort_order = index
+    venue.approval_status = 'pending'
+    db.commit()
+    return venue_view(db, venue)
+
+
+@app.delete('/api/vendor/venues/{venue_id}/photos/{photo_id}')
+def remove_photo(venue_id: UUID, photo_id: UUID, user: User = Depends(role('vendor')), db: Session = Depends(get_db)):
+    venue = owned_venue(db, venue_id, user)
+    photo = db.scalar(select(VenuePhoto).where(VenuePhoto.id == str(photo_id), VenuePhoto.venue_id == venue.id))
+    if not photo:
+        raise HTTPException(404, 'Photo not found.')
+    key = photo.url.removeprefix('object://') if photo.url.startswith('object://') else None
+    db.delete(photo)
+    venue.approval_status = 'pending'
+    db.flush()
+    remaining = db.scalars(select(VenuePhoto).where(VenuePhoto.venue_id == venue.id).order_by(VenuePhoto.sort_order)).all()
+    for index, item in enumerate(remaining):
+        item.sort_order = index
+    db.commit()
+    if key:
+        try:
+            objects.delete(key)
+        except Exception:
+            pass
+    return venue_view(db, venue)
 
 
 @app.put('/api/vendor/venues/{venue_id}/availability')

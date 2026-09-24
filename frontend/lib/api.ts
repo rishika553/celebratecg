@@ -1,10 +1,12 @@
 export type User = { id: string; name: string; email: string; role: 'customer' | 'vendor' | 'admin'; approval_status: string };
 export type Category = { id: string; name: string; slug: string };
-export type Venue = { id: string; name: string; description: string; location_text: string; price_per_day: string; max_guests: number; facilities: string[]; category: string; category_id: string; category_slug: string; photos: string[]; rules: string; cancellation_policy: string; approval_status: string };
+export type VenuePhoto = { id: string; url: string; sort_order: number };
+export type Venue = { id: string; name: string; description: string; location_text: string; price_per_day: string; max_guests: number; facilities: string[]; category: string; category_id: string; category_slug: string; photos: string[]; photo_items: VenuePhoto[]; rules: string; cancellation_policy: string; approval_status: string };
 export type Booking = { id: string; venue_id: string; venue_name: string; booking_date: string; guest_count: number; total_amount: string; status: string; expires_at: string };
 export type Health = { demo_mode: boolean; payments_enabled: boolean };
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`/api${path}`, { ...options, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...options?.headers } });
+  const headers = options?.body instanceof FormData ? options?.headers : { 'Content-Type': 'application/json', ...options?.headers };
+  const response = await fetch(`/api${path}`, { ...options, credentials: 'same-origin', headers });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const detail = data.detail;

@@ -55,6 +55,10 @@ class ApprovalInput(Input):
     status: Literal['approved', 'rejected']
 
 
+class PhotoOrderInput(Input):
+    photo_ids: list[UUID] = Field(min_length=1, max_length=10)
+
+
 class VerifyPayment(Input):
     razorpay_order_id: str = Field(max_length=100, pattern=r'^order_[A-Za-z0-9]+$')
     razorpay_payment_id: str = Field(max_length=100, pattern=r'^pay_[A-Za-z0-9]+$')
