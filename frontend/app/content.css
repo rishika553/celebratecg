@@ -109,6 +109,9 @@
 
 /* Section variety and restrained complementary accents. */
 :root { --teal: #36746D; --soft-gold: #D4A34A; }
+.tiny-star { display: inline-flex; align-items: center; }
+.hero-doodle { transform: none; line-height: 1; }
+.hero-doodle svg { display: block; }
 .hero-doodle, .tiny-star { color: var(--soft-gold); }
 .hero-copy > p { max-width: 48ch; }
 .search-bar label span svg, .location svg, .results-caption svg,
@@ -154,6 +157,7 @@
 .host-banner .button-light { background: var(--accent); color: white; }
 .host-banner .button-light:hover { background: #963819; }
 @media(max-width:760px) {
+  .hero-doodle svg { width: 34px; height: 34px; }
   #why, #benefits, .faq-section { padding-top: 30px; padding-bottom: 30px; border-radius: 0; }
   .value-card, .benefit-card { padding: 24px; }
 }
