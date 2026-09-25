@@ -71,6 +71,16 @@ class VenuePhoto(Base):
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class Wishlist(Base):
+    __tablename__ = 'wishlists'
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True, default=uid)
+    customer_id: Mapped[str] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
+    target_type: Mapped[str] = mapped_column(String(20), default='venue')
+    target_id: Mapped[str] = mapped_column(Uuid(as_uuid=False))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    __table_args__ = (UniqueConstraint('customer_id', 'target_type', 'target_id'),)
+
+
 class Availability(Base):
     __tablename__ = 'venue_availability'
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True, default=uid)
@@ -78,6 +88,30 @@ class Availability(Base):
     date: Mapped[object] = mapped_column(Date)
     is_available: Mapped[bool] = mapped_column(Boolean, default=True)
     __table_args__ = (UniqueConstraint('venue_id', 'date'),)
+
+
+class Offer(Base):
+    __tablename__ = 'offers'
+    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True, default=uid)
+    code: Mapped[str] = mapped_column(String(40), unique=True)
+    name: Mapped[str] = mapped_column(String(150))
+    discount_type: Mapped[str] = mapped_column(String(20))
+    discount_value: Mapped[float] = mapped_column(Numeric(12, 2))
+    starts_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    minimum_booking_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0)
+    usage_limit: Mapped[int | None] = mapped_column(Integer)
+    times_used: Mapped[int] = mapped_column(Integer, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    __table_args__ = (
+        CheckConstraint('discount_value > 0'),
+        CheckConstraint('minimum_booking_amount >= 0'),
+        CheckConstraint('usage_limit IS NULL OR usage_limit > 0'),
+        CheckConstraint('times_used >= 0'),
+        CheckConstraint('expires_at > starts_at'),
+    )
 
 
 class Booking(Base):
@@ -88,6 +122,10 @@ class Booking(Base):
     venue_id: Mapped[str] = mapped_column(ForeignKey('venues.id'))
     booking_date: Mapped[object] = mapped_column(Date)
     guest_count: Mapped[int] = mapped_column(Integer)
+    base_amount: Mapped[float] = mapped_column(Numeric(12, 2))
+    discount_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0)
+    offer_id: Mapped[str | None] = mapped_column(ForeignKey('offers.id'))
+    offer_code_snapshot: Mapped[str | None] = mapped_column(String(40))
     total_amount: Mapped[float] = mapped_column(Numeric(12, 2))
     status: Mapped[str] = mapped_column(booking_status_type, default='pending')
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

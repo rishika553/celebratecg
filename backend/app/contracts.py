@@ -1,8 +1,8 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 
 class Input(BaseModel):
@@ -44,6 +44,56 @@ class BookingInput(Input):
     venue_id: UUID
     booking_date: date
     guest_count: int = Field(gt=0, le=100000)
+    offer_code: str = Field(default='', max_length=40)
+
+    @field_validator('offer_code')
+    @classmethod
+    def normalize_offer_code(cls, value):
+        value = value.upper()
+        if value and (not value.replace('-', '').isalnum() or len(value) < 3):
+            raise ValueError('Offer code must contain letters, numbers, or hyphens.')
+        return value
+
+
+class OfferValidationInput(Input):
+    venue_id: UUID
+    code: str = Field(min_length=3, max_length=40)
+
+    @field_validator('code')
+    @classmethod
+    def normalize_code(cls, value):
+        value = value.upper()
+        if not value.replace('-', '').isalnum():
+            raise ValueError('Offer code must contain letters, numbers, or hyphens.')
+        return value
+
+
+class OfferInput(Input):
+    code: str = Field(min_length=3, max_length=40)
+    name: str = Field(min_length=3, max_length=150)
+    discount_type: Literal['percentage', 'fixed']
+    discount_value: Decimal = Field(gt=0, le=10000000, decimal_places=2)
+    starts_at: datetime
+    expires_at: datetime
+    minimum_booking_amount: Decimal = Field(default=0, ge=0, le=10000000, decimal_places=2)
+    usage_limit: int | None = Field(default=None, gt=0, le=10000000)
+    is_active: bool = True
+
+    @field_validator('code')
+    @classmethod
+    def valid_code(cls, value):
+        value = value.upper()
+        if not value.replace('-', '').isalnum():
+            raise ValueError('Offer code must contain letters, numbers, or hyphens.')
+        return value
+
+    @model_validator(mode='after')
+    def valid_discount(self):
+        if self.expires_at <= self.starts_at:
+            raise ValueError('Expiry must be after the start date.')
+        if self.discount_type == 'percentage' and self.discount_value >= 100:
+            raise ValueError('Percentage discounts must be less than 100%.')
+        return self
 
 
 class AvailabilityInput(Input):

@@ -1,7 +1,7 @@
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 import hashlib
 import hmac
 import json
@@ -16,9 +16,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .auth import current_user, dummy_hash, passwords, role, set_session, user_view
 from .config import settings
-from .contracts import ApprovalInput, AvailabilityInput, BookingInput, Login, PhotoOrderInput, Signup, VenueInput, VerifyPayment
+from .contracts import ApprovalInput, AvailabilityInput, BookingInput, Login, OfferInput, OfferValidationInput, PhotoOrderInput, Signup, VenueInput, VerifyPayment
 from .db import get_db
-from .models import Availability, Booking, Category, Payment, User, Venue, VenuePhoto, now
+from .models import Availability, Booking, Category, Offer, Payment, User, Venue, VenuePhoto, Wishlist, now
 from .storage import objects
 
 
@@ -108,8 +108,54 @@ def public_venue(db, venue_id):
 def booking_view(db, booking):
     venue = db.get(Venue, booking.venue_id)
     return {'id': booking.id, 'venue_id': booking.venue_id, 'venue_name': venue.name, 'booking_date': str(booking.booking_date),
-            'guest_count': booking.guest_count, 'total_amount': str(booking.total_amount), 'status': booking.status,
+            'guest_count': booking.guest_count, 'base_amount': str(booking.base_amount),
+            'discount_amount': str(booking.discount_amount), 'offer_id': booking.offer_id,
+            'offer_code': booking.offer_code_snapshot, 'total_amount': str(booking.total_amount), 'status': booking.status,
             'expires_at': aware(booking.expires_at).isoformat(), 'created_at': booking.created_at.isoformat()}
+
+
+def offer_view(offer):
+    moment = now()
+    status = 'inactive'
+    if offer.is_active:
+        if aware(offer.expires_at) <= moment:
+            status = 'expired'
+        elif aware(offer.starts_at) > moment:
+            status = 'scheduled'
+        elif offer.usage_limit is not None and offer.times_used >= offer.usage_limit:
+            status = 'used_up'
+        else:
+            status = 'active'
+    return {'id': offer.id, 'code': offer.code, 'name': offer.name, 'discount_type': offer.discount_type,
+            'discount_value': str(offer.discount_value), 'starts_at': aware(offer.starts_at).isoformat(),
+            'expires_at': aware(offer.expires_at).isoformat(),
+            'minimum_booking_amount': str(offer.minimum_booking_amount), 'usage_limit': offer.usage_limit,
+            'times_used': offer.times_used, 'is_active': offer.is_active, 'status': status}
+
+
+def calculate_offer(db: Session, code: str, amount: Decimal, lock: bool = False):
+    query = select(Offer).where(Offer.code == code)
+    if lock:
+        query = query.with_for_update()
+    offer = db.scalar(query.execution_options(populate_existing=True))
+    if not offer:
+        raise HTTPException(422, 'Offer code was not found.')
+    moment = now()
+    if not offer.is_active:
+        raise HTTPException(422, 'This offer is not active.')
+    if aware(offer.starts_at) > moment:
+        raise HTTPException(422, 'This offer has not started yet.')
+    if aware(offer.expires_at) <= moment:
+        raise HTTPException(422, 'This offer has expired.')
+    if amount < Decimal(offer.minimum_booking_amount):
+        raise HTTPException(422, f'This offer requires a minimum booking amount of ₹{offer.minimum_booking_amount}.')
+    if offer.usage_limit is not None and offer.times_used >= offer.usage_limit:
+        raise HTTPException(422, 'This offer has reached its usage limit.')
+    discount = amount * Decimal(offer.discount_value) / Decimal(100) if offer.discount_type == 'percentage' else Decimal(offer.discount_value)
+    discount = discount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    if discount >= amount:
+        raise HTTPException(422, 'This offer discount must be less than the booking amount.')
+    return offer, discount, amount - discount
 
 
 def own_booking(db, booking_id, user):
@@ -216,6 +262,49 @@ def availability(venue_id: UUID, day: date, db: Session = Depends(get_db)):
     return {'date': str(day), 'available': day >= business_today() and not active and not (block and not block.is_available)}
 
 
+@app.get('/api/favourites')
+def favourites(user: User = Depends(role('customer')), db: Session = Depends(get_db)):
+    query = (select(Venue)
+             .join(Wishlist, Wishlist.target_id == Venue.id)
+             .join(Category, Venue.category_id == Category.id)
+             .join(User, Venue.vendor_id == User.id)
+             .where(Wishlist.customer_id == user.id, Wishlist.target_type == 'venue',
+                    Venue.approval_status == 'approved', Venue.is_active.is_(True),
+                    Category.is_active.is_(True), User.approval_status == 'approved')
+             .order_by(Wishlist.created_at.desc()))
+    return [venue_view(db, venue) for venue in db.scalars(query)]
+
+
+@app.get('/api/favourites/ids')
+def favourite_ids(user: User = Depends(role('customer')), db: Session = Depends(get_db)):
+    return list(db.scalars(select(Wishlist.target_id).where(
+        Wishlist.customer_id == user.id, Wishlist.target_type == 'venue')))
+
+
+@app.post('/api/favourites/{venue_id}', status_code=201)
+def add_favourite(venue_id: UUID, user: User = Depends(role('customer')), db: Session = Depends(get_db)):
+    venue = public_venue(db, venue_id)
+    existing = db.scalar(select(Wishlist).where(
+        Wishlist.customer_id == user.id, Wishlist.target_type == 'venue', Wishlist.target_id == venue.id))
+    if not existing:
+        db.add(Wishlist(customer_id=user.id, target_type='venue', target_id=venue.id))
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+    return {'saved': True, 'venue_id': venue.id}
+
+
+@app.delete('/api/favourites/{venue_id}')
+def remove_favourite(venue_id: UUID, user: User = Depends(role('customer')), db: Session = Depends(get_db)):
+    favourite = db.scalar(select(Wishlist).where(
+        Wishlist.customer_id == user.id, Wishlist.target_type == 'venue', Wishlist.target_id == str(venue_id)))
+    if favourite:
+        db.delete(favourite)
+        db.commit()
+    return {'saved': False, 'venue_id': str(venue_id)}
+
+
 @app.post('/api/bookings', status_code=201)
 def create_booking(data: BookingInput, user: User = Depends(role('customer')), db: Session = Depends(get_db)):
     venue = public_venue(db, data.venue_id)
@@ -228,8 +317,15 @@ def create_booking(data: BookingInput, user: User = Depends(role('customer')), d
     block = db.scalar(select(Availability).where(Availability.venue_id == venue.id, Availability.date == data.booking_date))
     if block and not block.is_available:
         raise HTTPException(409, 'The venue is unavailable on this date.')
+    base_amount = Decimal(venue.price_per_day)
+    offer, discount_amount, final_amount = None, Decimal('0.00'), base_amount
+    if data.offer_code:
+        offer, discount_amount, final_amount = calculate_offer(db, data.offer_code, base_amount, lock=True)
+        offer.times_used += 1
     booking = Booking(customer_id=user.id, venue_id=venue.id, booking_date=data.booking_date, guest_count=data.guest_count,
-                      total_amount=venue.price_per_day, expires_at=now() + timedelta(minutes=15), cancellation_policy_snapshot=venue.cancellation_policy)
+                      base_amount=base_amount, discount_amount=discount_amount, offer_id=offer.id if offer else None,
+                      offer_code_snapshot=offer.code if offer else None, total_amount=final_amount,
+                      expires_at=now() + timedelta(minutes=15), cancellation_policy_snapshot=venue.cancellation_policy)
     db.add(booking)
     try:
         db.commit()
@@ -237,6 +333,15 @@ def create_booking(data: BookingInput, user: User = Depends(role('customer')), d
         db.rollback()
         raise HTTPException(409, 'This date was just reserved. Please choose another date.')
     return booking_view(db, booking)
+
+
+@app.post('/api/offers/validate')
+def validate_offer(data: OfferValidationInput, db: Session = Depends(get_db)):
+    venue = public_venue(db, data.venue_id)
+    amount = Decimal(venue.price_per_day)
+    offer, discount, final_amount = calculate_offer(db, data.code, amount)
+    return {'offer': offer_view(offer), 'base_amount': str(amount), 'discount_amount': str(discount),
+            'final_amount': str(final_amount)}
 
 
 @app.get('/api/bookings')
@@ -391,6 +496,64 @@ def admin_overview(user: User = Depends(role('admin')), db: Session = Depends(ge
             'vendors': [user_view(u) for u in db.scalars(select(User).where(User.role == 'vendor'))],
             'listings': [venue_view(db, v) for v in db.scalars(select(Venue))],
             'refunds_to_review': [{'payment_id': p.id, 'amount': str(p.amount)} for p in db.scalars(select(Payment).where(Payment.requires_refund.is_(True)))]}
+
+
+@app.get('/api/admin/offers')
+def admin_offers(user: User = Depends(role('admin')), db: Session = Depends(get_db)):
+    return [offer_view(offer) for offer in db.scalars(select(Offer).order_by(Offer.created_at.desc()))]
+
+
+def apply_offer_input(data: OfferInput, offer: Offer):
+    for key, value in data.model_dump().items():
+        setattr(offer, key, value)
+    return offer
+
+
+@app.post('/api/admin/offers', status_code=201)
+def create_offer(data: OfferInput, user: User = Depends(role('admin')), db: Session = Depends(get_db)):
+    if db.scalar(select(Offer).where(Offer.code == data.code)):
+        raise HTTPException(409, 'An offer with this code already exists.')
+    offer = apply_offer_input(data, Offer(times_used=0))
+    db.add(offer)
+    db.commit()
+    return offer_view(offer)
+
+
+@app.put('/api/admin/offers/{offer_id}')
+def update_offer(offer_id: UUID, data: OfferInput, user: User = Depends(role('admin')), db: Session = Depends(get_db)):
+    offer = db.get(Offer, str(offer_id))
+    if not offer:
+        raise HTTPException(404, 'Offer not found.')
+    duplicate = db.scalar(select(Offer).where(Offer.code == data.code, Offer.id != offer.id))
+    if duplicate:
+        raise HTTPException(409, 'An offer with this code already exists.')
+    apply_offer_input(data, offer)
+    db.commit()
+    return offer_view(offer)
+
+
+@app.post('/api/admin/offers/{offer_id}/activate')
+def activate_offer(offer_id: UUID, user: User = Depends(role('admin')), db: Session = Depends(get_db)):
+    offer = db.get(Offer, str(offer_id))
+    if not offer:
+        raise HTTPException(404, 'Offer not found.')
+    if aware(offer.expires_at) <= now():
+        raise HTTPException(422, 'Edit the expiry date before activating this offer.')
+    offer.is_active = True
+    db.commit()
+    return offer_view(offer)
+
+
+@app.post('/api/admin/offers/{offer_id}/expire')
+def expire_offer(offer_id: UUID, user: User = Depends(role('admin')), db: Session = Depends(get_db)):
+    offer = db.get(Offer, str(offer_id))
+    if not offer:
+        raise HTTPException(404, 'Offer not found.')
+    offer.is_active = False
+    if aware(offer.expires_at) > now():
+        offer.expires_at = now()
+    db.commit()
+    return offer_view(offer)
 
 
 @app.post('/api/admin/vendors/{user_id}/approval')

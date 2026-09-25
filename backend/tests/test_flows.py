@@ -6,7 +6,7 @@ import json
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from app.main import app
-from app.models import Booking, Payment, User, Venue, now
+from app.models import Booking, Offer, Payment, User, Venue, now
 from conftest import login
 
 
@@ -54,6 +54,39 @@ def test_pending_listings_hidden_and_filters_work(context):
     assert client.get(f'/api/venues/{context["venue_id"]}').status_code == 404
 
 
+def test_customer_favourites_are_private_idempotent_and_removable(context):
+    client = context['client']
+    login(client)
+    venue_path = f'/api/favourites/{context["venue_id"]}'
+    for _ in range(2):
+        saved = client.post(venue_path)
+        assert saved.status_code == 201
+        assert saved.json()['saved'] is True
+    assert client.get('/api/favourites/ids').json() == [context['venue_id']]
+    favourites = client.get('/api/favourites').json()
+    assert [venue['id'] for venue in favourites] == [context['venue_id']]
+
+    login(client, 'other')
+    assert client.get('/api/favourites').json() == []
+    assert client.delete(venue_path).json()['saved'] is False
+
+    login(client)
+    assert client.get('/api/favourites/ids').json() == [context['venue_id']]
+    assert client.delete(venue_path).status_code == 200
+    assert client.get('/api/favourites').json() == []
+
+
+def test_only_customers_can_save_public_venues(context):
+    client = context['client']
+    login(client, 'vendor')
+    assert client.post(f'/api/favourites/{context["venue_id"]}').status_code == 403
+    login(client)
+    with context['sessions']() as db:
+        db.get(Venue, context['venue_id']).approval_status = 'pending'
+        db.commit()
+    assert client.post(f'/api/favourites/{context["venue_id"]}').status_code == 404
+
+
 def test_server_price_capacity_and_duplicate_reservation(context):
     first = reserve(context)
     assert first['total_amount'] == '45000.00'
@@ -62,6 +95,69 @@ def test_server_price_capacity_and_duplicate_reservation(context):
     assert client.post('/api/bookings', json=payload(context, guest_count=101)).status_code == 422
     assert client.post('/api/bookings', json=payload(context, total_amount=1)).status_code == 422
     assert client.post('/api/bookings', json=payload(context, booking_date='2020-01-01')).status_code == 422
+
+
+def offer_payload(**changes):
+    moment = now()
+    return {
+        'code': 'WELCOME10', 'name': 'Welcome offer', 'discount_type': 'percentage', 'discount_value': 10,
+        'starts_at': (moment - timedelta(hours=1)).isoformat(), 'expires_at': (moment + timedelta(days=5)).isoformat(),
+        'minimum_booking_amount': 10000, 'usage_limit': 1, 'is_active': True, **changes,
+    }
+
+
+def test_admin_offer_is_validated_and_snapshotted_on_booking(context):
+    client = context['client']
+    login(client, 'admin')
+    created = client.post('/api/admin/offers', json=offer_payload())
+    assert created.status_code == 201, created.text
+    login(client)
+    validated = client.post('/api/offers/validate', json={'venue_id': context['venue_id'], 'code': 'welcome10'})
+    assert validated.status_code == 200
+    assert validated.json()['discount_amount'] == '4500.00'
+    booking = client.post('/api/bookings', json=payload(context, offer_code='welcome10'))
+    assert booking.status_code == 201, booking.text
+    result = booking.json()
+    assert result['base_amount'] == '45000.00'
+    assert result['discount_amount'] == '4500.00'
+    assert result['total_amount'] == '40500.00'
+    assert result['offer_code'] == 'WELCOME10'
+    with context['sessions']() as db:
+        saved = db.get(Booking, result['id'])
+        assert saved.offer_id is not None
+        assert db.get(Offer, saved.offer_id).times_used == 1
+    login(client, 'other')
+    limited = client.post('/api/bookings', json=payload(context, booking_date=str(date.today() + timedelta(days=11)), offer_code='WELCOME10'))
+    assert limited.status_code == 422
+    assert 'usage limit' in limited.json()['detail']
+
+
+def test_admin_can_edit_activate_and_expire_fixed_offer(context):
+    client = context['client']
+    login(client, 'admin')
+    created = client.post('/api/admin/offers', json=offer_payload(
+        code='SAVE5000', discount_type='fixed', discount_value=5000, minimum_booking_amount=50000,
+        usage_limit=None, is_active=False,
+    )).json()
+    login(client)
+    validation = {'venue_id': context['venue_id'], 'code': 'SAVE5000'}
+    assert client.post('/api/offers/validate', json=validation).status_code == 422
+    login(client, 'admin')
+    assert client.post(f'/api/admin/offers/{created["id"]}/activate').status_code == 200
+    login(client)
+    assert 'minimum booking amount' in client.post('/api/offers/validate', json=validation).json()['detail']
+    login(client, 'admin')
+    updated = client.put(f'/api/admin/offers/{created["id"]}', json=offer_payload(
+        code='SAVE5000', discount_type='fixed', discount_value=5000, minimum_booking_amount=40000,
+        usage_limit=None, is_active=True,
+    ))
+    assert updated.status_code == 200, updated.text
+    login(client)
+    assert client.post('/api/offers/validate', json=validation).json()['final_amount'] == '40000.00'
+    login(client, 'admin')
+    assert client.post(f'/api/admin/offers/{created["id"]}/expire').json()['status'] == 'inactive'
+    login(client)
+    assert client.post('/api/offers/validate', json=validation).status_code == 422
 
 
 def test_concurrent_customers_cannot_double_book(context):

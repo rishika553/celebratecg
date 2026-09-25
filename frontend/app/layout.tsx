@@ -8,7 +8,8 @@ import './globals.css';
 import './theme.css';
 import './content.css';
 import SiteFooter from '@/components/site-footer';
+import ScrollReveal from '@/components/scroll-reveal';
 export const metadata: Metadata = { title: 'CelebrateCG — Farmhouse, Resort & Wedding Venue Booking in Chhattisgarh', description: 'Plan. Book. Celebrate. Discover farmhouses, luxury villas, private resorts, homestays, wedding venues and event services across Chhattisgarh.' };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><SessionProvider><Header />{children}<SiteFooter /></SessionProvider></body></html>;
+  return <html lang="en"><body><SessionProvider><ScrollReveal /><Header />{children}<SiteFooter /></SessionProvider></body></html>;
 }
