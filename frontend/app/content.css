@@ -255,3 +255,44 @@ html, body { overflow-x: clip; }
   .offer-card dl div { grid-template-columns: 96px 1fr; }
   .offer-apply .button { padding-left: 13px; padding-right: 13px; }
 }
+
+/* Farmhouse and villa atmosphere for the sign-in and account welcome panel. */
+.auth-story {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 650px;
+  border-color: #5B554F;
+  background:
+    linear-gradient(180deg, #171A18A3 0%, #171A18C7 58%, #171A18E8 100%),
+    url('/auth-villa.jpg') center / cover no-repeat;
+  color: #FFF8F1;
+  box-shadow: 0 20px 48px #34261D24;
+}
+.auth-story::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, #C66A3B1F, transparent 48%);
+  pointer-events: none;
+}
+.auth-story > svg,
+.auth-story h1 em,
+.auth-story .eyebrow { color: #F2AE83; }
+.auth-story h1 { color: #FFF8F1; text-shadow: 0 2px 20px #0000004D; }
+.auth-story p { color: #F2E7DE; text-shadow: 0 1px 10px #00000066; }
+@media(max-width:760px) {
+  .auth-page { gap: 24px; }
+  .auth-story {
+    display: flex;
+    min-height: 310px;
+    padding: 34px 26px;
+    justify-content: flex-end;
+    background-position: center 42%;
+  }
+  .auth-story > svg { display: none; }
+  .auth-story .eyebrow { margin-bottom: 12px; }
+  .auth-story h1 { max-width: 360px; margin-bottom: 10px; font-size: clamp(38px, 11vw, 48px); }
+  .auth-story p { margin-bottom: 0; }
+}
