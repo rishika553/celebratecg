@@ -1,0 +1,61 @@
+# This blueprint provisions paid web and cron services when applied.
+# See docs/deployment.md before creating resources.
+services:
+  - type: web
+    name: celebratecg-api
+    runtime: python
+    plan: 0.5c-512mb
+    region: singapore
+    rootDir: backend
+    buildCommand: pip install -r requirements.lock.txt
+    preDeployCommand: python -m alembic upgrade head
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /api/ready
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: APP_ENV
+        value: production
+      - key: DEMO_MODE
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: STORAGE_BACKEND
+        value: s3
+      - key: STORAGE_BUCKET
+        value: venue-images
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_ENDPOINT_URL_S3
+        sync: false
+      - key: AWS_REGION
+        sync: false
+      # Add optional Razorpay keys in the dashboard when ready to test payments.
+
+  - type: cron
+    name: celebratecg-reservation-expiry
+    runtime: python
+    plan: 0.5c-512mb
+    region: singapore
+    rootDir: backend
+    schedule: "*/5 * * * *"
+    buildCommand: pip install -r requirements.lock.txt
+    startCommand: python -m app.maintenance
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: APP_ENV
+        value: production
+      - key: DEMO_MODE
+        value: "false"
+      - key: DATABASE_URL
+        fromService:
+          type: web
+          name: celebratecg-api
+          envVarKey: DATABASE_URL

@@ -11,8 +11,8 @@ from zoneinfo import ZoneInfo
 import httpx
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, or_, select, update
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func, or_, select, update, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from .auth import current_user, dummy_hash, passwords, role, set_session, user_view
 from .config import settings
@@ -20,6 +20,7 @@ from .contracts import ApprovalInput, AvailabilityInput, BookingInput, Login, Of
 from .db import get_db
 from .models import Availability, Booking, Category, Offer, Payment, User, Venue, VenuePhoto, Wishlist, now
 from .storage import objects
+from .reservations import expire_holds
 
 
 @asynccontextmanager
@@ -47,10 +48,6 @@ async def browser_security(request: Request, call_next):
     if request.url.path.startswith(('/api/auth', '/api/bookings', '/api/admin', '/api/vendor', '/api/payments')):
         response.headers['Cache-Control'] = 'no-store'
     return response
-
-
-def expire_holds(db: Session):
-    db.execute(update(Booking).where(Booking.status == 'pending', Booking.expires_at <= now()).values(status='cancelled', cancelled_at=now(), cancellation_reason='Reservation expired'))
 
 
 def aware(value):
@@ -168,6 +165,15 @@ def own_booking(db, booking_id, user):
 @app.get('/api/health')
 def health():
     return {'status': 'ok', 'demo_mode': settings().demo_mode, 'payments_enabled': bool(settings().razorpay_key_id and settings().razorpay_key_secret)}
+
+
+@app.get('/api/ready')
+def ready(db: Session = Depends(get_db)):
+    try:
+        db.execute(text('SELECT 1'))
+    except SQLAlchemyError:
+        return JSONResponse({'status': 'unavailable'}, status_code=503, headers={'Cache-Control': 'no-store'})
+    return JSONResponse({'status': 'ready'}, headers={'Cache-Control': 'no-store'})
 
 
 @app.get('/api/media/{key:path}')

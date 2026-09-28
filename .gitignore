@@ -8,8 +8,10 @@ __pycache__/
 *.db
 .env
 .env.local
+.env.*
 !.env.example
 !.env.local.example
+.vercel/
 playwright-report/
 test-results/
 *.log

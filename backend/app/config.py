@@ -1,5 +1,6 @@
 from functools import lru_cache
 import os
+from urllib.parse import urlsplit
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,8 +25,16 @@ class Settings(BaseSettings):
     def validate_runtime(self):
         if len(self.jwt_secret) < 32 or self.jwt_secret.startswith('replace-with'):
             raise RuntimeError('Set JWT_SECRET to a random secret of at least 32 characters in backend/.env.')
-        if self.app_env == 'production' and (self.demo_mode or self.database_url.startswith('sqlite')):
-            raise RuntimeError('Production requires PostgreSQL and DEMO_MODE=false.')
+        if self.app_env == 'production' and (self.demo_mode or not self.database_url.startswith('postgresql+psycopg://')):
+            raise RuntimeError('Production requires DATABASE_URL=postgresql+psycopg://... and DEMO_MODE=false.')
+        if self.app_env == 'production':
+            if not self.origins:
+                raise RuntimeError('Production requires at least one ALLOWED_ORIGINS frontend origin.')
+            for origin in self.origins:
+                parsed = urlsplit(origin)
+                if (parsed.scheme != 'https' or not parsed.netloc or '*' in origin or
+                        parsed.path or parsed.query or parsed.fragment or parsed.username or parsed.password):
+                    raise RuntimeError('Production ALLOWED_ORIGINS must contain exact HTTPS origins without trailing slashes.')
         if self.app_env == 'production' and self.storage_backend != 's3':
             raise RuntimeError('Production requires STORAGE_BACKEND=s3.')
         if self.storage_backend == 's3':
