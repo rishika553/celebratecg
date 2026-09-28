@@ -9,7 +9,16 @@ import './theme.css';
 import './content.css';
 import SiteFooter from '@/components/site-footer';
 import ScrollReveal from '@/components/scroll-reveal';
-export const metadata: Metadata = { title: 'CelebrateCG — Farmhouse, Resort & Wedding Venue Booking in Chhattisgarh', description: 'Plan. Book. Celebrate. Discover farmhouses, luxury villas, private resorts, homestays, wedding venues and event services across Chhattisgarh.' };
+export const metadata: Metadata = {
+  title: 'CelebrateCG — Chhattisgarh’s Biggest Celebration Booking Platform',
+  description: 'Discover, compare and book verified farmhouses, villas, resorts, wedding venues, banquet halls, party spaces and event services across Chhattisgarh.',
+  keywords: ['farmhouse booking Chhattisgarh', 'wedding venues Raipur', 'resorts Chhattisgarh', 'banquet halls', 'event services Chhattisgarh', 'party venues'],
+  openGraph: {
+    title: 'CelebrateCG — Plan. Book. Celebrate.',
+    description: 'Everything for every celebration in Chhattisgarh—venues, stays, weddings, parties and professional event services.',
+    type: 'website',
+  },
+};
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="en"><body><SessionProvider><ScrollReveal /><Header />{children}<SiteFooter /></SessionProvider></body></html>;
 }
