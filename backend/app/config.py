@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     storage_backend: str = 'local'
     storage_bucket: str = 'venue-images'
     storage_local_dir: str = './uploads'
+    supabase_url: str = ''
+    supabase_publishable_key: str = ''
 
     @property
     def origins(self):

@@ -71,16 +71,6 @@ class VenuePhoto(Base):
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
 
-class Wishlist(Base):
-    __tablename__ = 'wishlists'
-    id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True, default=uid)
-    customer_id: Mapped[str] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'))
-    target_type: Mapped[str] = mapped_column(String(20), default='venue')
-    target_id: Mapped[str] = mapped_column(Uuid(as_uuid=False))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
-    __table_args__ = (UniqueConstraint('customer_id', 'target_type', 'target_id'),)
-
-
 class Availability(Base):
     __tablename__ = 'venue_availability'
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True, default=uid)

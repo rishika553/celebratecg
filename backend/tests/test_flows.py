@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 from fastapi.testclient import TestClient
+import app.main as api_main
 from sqlalchemy import select
 from app.main import app
 from app.models import Booking, Offer, Payment, User, Venue, now
@@ -47,6 +48,12 @@ def test_pending_listings_hidden_and_filters_work(context):
     assert len(client.get('/api/venues?q=raipur&guests=40').json()) == 1
     assert client.get('/api/venues?guests=200').json() == []
     assert client.get('/api/venues?max_price=100').json() == []
+    assert len(client.get('/api/venues?city=raipur&min_price=40000&facility=park').json()) == 1
+    assert client.get('/api/venues?facility=pool').json() == []
+    assert client.get('/api/cities').json() == [{'name': 'Raipur', 'venue_count': 1, 'image': ''}]
+    assert client.get('/api/categories?kind=all').json() == [
+        {'id': context['category_id'], 'name': 'Lawns', 'slug': 'lawn', 'type': 'venue'}
+    ]
     with context['sessions']() as db:
         db.get(Venue, context['venue_id']).approval_status = 'pending'
         db.commit()
@@ -54,37 +61,6 @@ def test_pending_listings_hidden_and_filters_work(context):
     assert client.get(f'/api/venues/{context["venue_id"]}').status_code == 404
 
 
-def test_customer_favourites_are_private_idempotent_and_removable(context):
-    client = context['client']
-    login(client)
-    venue_path = f'/api/favourites/{context["venue_id"]}'
-    for _ in range(2):
-        saved = client.post(venue_path)
-        assert saved.status_code == 201
-        assert saved.json()['saved'] is True
-    assert client.get('/api/favourites/ids').json() == [context['venue_id']]
-    favourites = client.get('/api/favourites').json()
-    assert [venue['id'] for venue in favourites] == [context['venue_id']]
-
-    login(client, 'other')
-    assert client.get('/api/favourites').json() == []
-    assert client.delete(venue_path).json()['saved'] is False
-
-    login(client)
-    assert client.get('/api/favourites/ids').json() == [context['venue_id']]
-    assert client.delete(venue_path).status_code == 200
-    assert client.get('/api/favourites').json() == []
-
-
-def test_only_customers_can_save_public_venues(context):
-    client = context['client']
-    login(client, 'vendor')
-    assert client.post(f'/api/favourites/{context["venue_id"]}').status_code == 403
-    login(client)
-    with context['sessions']() as db:
-        db.get(Venue, context['venue_id']).approval_status = 'pending'
-        db.commit()
-    assert client.post(f'/api/favourites/{context["venue_id"]}').status_code == 404
 
 
 def test_server_price_capacity_and_duplicate_reservation(context):
@@ -332,3 +308,60 @@ def test_payment_order_reuses_existing_order(context, monkeypatch):
         assert result.status_code == 200
         assert result.json()['amount'] == 4500000
     assert len(calls) == 1
+
+
+
+def test_supabase_google_login_uses_existing_customer(context, monkeypatch):
+    api_main.settings().supabase_url = 'https://celebratecg-test.supabase.co'
+    api_main.settings().supabase_publishable_key = 'publishable-test-key'
+
+    class FakeResponse:
+        status_code = 200
+        def json(self):
+            return {
+                'email': 'customer@example.com',
+                'email_confirmed_at': '2026-09-30T00:00:00Z',
+                'user_metadata': {'full_name': 'Google User'},
+            }
+
+    def fake_get(url, headers, timeout):
+        assert url == 'https://celebratecg-test.supabase.co/auth/v1/user'
+        assert headers['Authorization'] == 'Bearer valid-google-access-token'
+        assert headers['apikey'] == 'publishable-test-key'
+        assert timeout == 10
+        return FakeResponse()
+
+    monkeypatch.setattr(api_main.httpx, 'get', fake_get)
+    result = context['client'].post('/api/auth/supabase', json={'access_token': 'valid-google-access-token', 'role': 'customer'})
+    assert result.status_code == 200, result.text
+    assert result.json()['email'] == 'customer@example.com'
+    assert result.json()['name'] == 'Google User'
+    assert result.json()['role'] == 'customer'
+    assert 'HttpOnly' in result.headers['set-cookie']
+    with context['sessions']() as db:
+        user = db.scalar(select(User).where(User.email == 'customer@example.com'))
+        assert user is not None
+        assert user.approval_status == 'approved'
+        assert user.is_email_verified is True
+
+
+def test_supabase_google_login_rejects_unknown_email(context, monkeypatch):
+    api_main.settings().supabase_url = 'https://celebratecg-test.supabase.co'
+    api_main.settings().supabase_publishable_key = 'publishable-test-key'
+
+    class FakeResponse:
+        status_code = 200
+        def json(self):
+            return {'email': 'google.vendor@example.com', 'user_metadata': {'name': 'Google Vendor'}}
+
+    monkeypatch.setattr(api_main.httpx, 'get', lambda *args, **kwargs: FakeResponse())
+    result = context['client'].post('/api/auth/supabase', json={'access_token': 'valid-google-access-token', 'role': 'customer'})
+    assert result.status_code == 403
+    assert 'No CelebrateCG account exists' in result.json()['detail']
+
+
+def test_supabase_google_login_requires_configuration(context):
+    api_main.settings().supabase_url = ''
+    api_main.settings().supabase_publishable_key = ''
+    result = context['client'].post('/api/auth/supabase', json={'access_token': 'valid-google-access-token', 'role': 'customer'})
+    assert result.status_code == 503

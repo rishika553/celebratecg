@@ -8,20 +8,45 @@ from .db import Base, engine, SessionLocal
 from .models import Category, User, Venue, VenuePhoto
 
 PHOTOS = [
-    # Category-matched venue references; provenance is recorded in docs/image-sources.md.
-    'https://cdn.spalba.com/venue_images/1730785544921-Vatika_20Lawn.webp',
-    'https://sayajihotels.com/images/hotels/Sayaji%20Raipur/banquet/Mahal%202.webp',
-    'https://portal-tourism.cgstate.gov.in/files/JDP3d1014e.jpg',
-    'https://familyfarms.in/images/farm_house_image/DOC1691492108523.6.jpg',
-    'https://cdn.venuelook.com/uploads/space_40506/1740113191_595x400.png',
-    'https://sayajihotels.com/images/hotels/Sayaji%20Raipur/banquet/pearl.webp',
+    # Unique venue-style references for local demo cards.
+    'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
 ]
 
 
 def seed_categories(db):
-    for name, slug in [('Banquet halls', 'banquet-hall'), ('Lawns & gardens', 'lawn'), ('Resorts', 'resort'), ('Farmhouses', 'farmhouse')]:
-        if not db.scalar(select(Category).where(Category.slug == slug)):
-            db.add(Category(name=name, slug=slug, type='venue'))
+    category_groups = {
+        'venue': [('Banquet halls', 'banquet-hall'), ('Lawns & gardens', 'lawn'), ('Resorts', 'resort'),
+                  ('Farmhouses', 'farmhouse'), ('Luxury villas', 'luxury-villa'), ('Hotels', 'hotel'),
+                  ('Eco stays & homestays', 'eco-stay'), ('Picnic destinations', 'picnic-destination')],
+        'service': [('DJ & entertainment', 'dj-entertainment'), ('Catering', 'catering'),
+                    ('Decoration & themes', 'decoration'), ('Photography & video', 'photography-video'),
+                    ('Mehndi & makeup', 'mehndi-makeup'), ('Sound, lights & stage', 'sound-light-stage'),
+                    ('Tent & furniture', 'tent-furniture'), ('Party planners', 'party-planners')],
+    }
+    for category_type, records in category_groups.items():
+        for name, slug in records:
+            category = db.scalar(select(Category).where(Category.slug == slug))
+            if category:
+                category.name = name
+                category.type = category_type
+                category.is_active = True
+            else:
+                db.add(Category(name=name, slug=slug, type=category_type))
     db.commit()
 
 
@@ -65,14 +90,26 @@ def main():
             ('The Mango Grove', 'Durg, Chhattisgarh', 'farmhouse', 28000, 120, ['Private garden', 'Pool', 'Parking']),
             ('Gulmohar Courtyard', 'Bilaspur, Chhattisgarh', 'lawn', 35000, 250, ['Open-air lawn', 'Covered dining', 'Parking']),
             ('Aangan Celebration Hall', 'Durg, Chhattisgarh', 'banquet-hall', 48000, 400, ['Air conditioning', 'Bridal suite', 'Parking']),
+            ('Arpa River View Resort', 'Bilaspur, Chhattisgarh', 'resort', 52000, 220, ['Riverside setting', 'Guest rooms', 'Pool', 'Parking']),
+            ('Kanan Celebration Lawn', 'Bilaspur, Chhattisgarh', 'lawn', 42000, 450, ['Open-air lawn', 'Covered dining', 'Stage & sound', 'Parking']),
+            ('Bilasa Heritage Banquet', 'Bilaspur, Chhattisgarh', 'banquet-hall', 58000, 500, ['Air conditioning', 'Bridal suite', 'Stage & sound', 'Covered dining']),
+            ('Seepat Garden Villa', 'Bilaspur, Chhattisgarh', 'luxury-villa', 36000, 80, ['Private garden', 'Pool', 'Guest rooms', 'Parking']),
+            ('Shivnath Riverside Greens', 'Bhilai, Chhattisgarh', 'lawn', 39000, 300, ['Riverside setting', 'Open-air lawn', 'Stage & sound', 'Parking']),
+            ('Mahua Eco Retreat', 'Jagdalpur, Chhattisgarh', 'eco-stay', 24000, 60, ['Guest rooms', 'Private garden', 'Covered dining', 'Parking']),
+            ('Hasdeo Pool Villa', 'Korba, Chhattisgarh', 'luxury-villa', 44000, 90, ['Pool', 'Guest rooms', 'Air conditioning', 'Private garden']),
+            ('Sirpur Picnic Estate', 'Mahasamund, Chhattisgarh', 'picnic-destination', 22000, 180, ['Open-air lawn', 'Covered dining', 'Parking', 'Private garden']),
+            ('Raigarh Royal Courtyard', 'Raigarh, Chhattisgarh', 'banquet-hall', 54000, 420, ['Air conditioning', 'Bridal suite', 'Stage & sound', 'Parking']),
+            ('Ambikapur Hill Garden', 'Ambikapur, Chhattisgarh', 'farmhouse', 30000, 140, ['Private garden', 'Open-air lawn', 'Guest rooms', 'Parking']),
         ]
         for i, (name, location, slug, price, guests, facilities) in enumerate(records):
             existing = db.scalar(select(Venue).where(Venue.name == name, Venue.vendor_id == vendor.id))
             if existing:
                 if args.refresh_demo_photos:
-                    for photo in db.scalars(select(VenuePhoto).where(VenuePhoto.venue_id == existing.id)):
-                        if photo.url.startswith('https://images.unsplash.com/'):
-                            photo.url = PHOTOS[i]
+                    photo = db.scalar(select(VenuePhoto).where(VenuePhoto.venue_id == existing.id).order_by(VenuePhoto.sort_order))
+                    if photo:
+                        photo.url = PHOTOS[i]
+                    else:
+                        db.add(VenuePhoto(venue_id=existing.id, url=PHOTOS[i]))
                 continue
             category = db.scalar(select(Category).where(Category.slug == slug))
             venue = Venue(vendor_id=vendor.id, category_id=category.id, name=name, location_text=location, price_per_day=price, max_guests=guests,

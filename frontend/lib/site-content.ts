@@ -14,14 +14,36 @@ export const site = {
 export const cities = ['Raipur', 'Bilaspur', 'Durg', 'Bhilai', 'Korba', 'Jagdalpur', 'Ambikapur', 'Raigarh'];
 
 export const categories = [
-  { name: 'Farmhouses', description: 'Private lawns & pools for birthdays and weekend escapes', image: '313bd5ac-b0be-4841-949e-ec12cd24af3e' },
-  { name: 'Luxury villas', description: 'Designer stays with private pools and full staff', image: '5cf7ea59-6377-48bd-a6f0-6d1abc74e409' },
-  { name: 'Private resorts', description: 'Full-property bookings for weddings and retreats', image: 'b2f651a9-1640-49ef-9e85-583dca21f24e' },
-  { name: 'Eco stays & homestays', description: 'Nature-led escapes and local stays with Chhattisgarhi hospitality', image: '75e458ce-f739-4f0d-9775-0b09a3056488' },
-  { name: 'Government tourism properties', description: 'Tourism lodges near forests, falls and heritage sites', image: 'ef27c464-72cd-4d97-8cf9-fbe843d32d97' },
-  { name: 'Wedding venues', description: 'Mandap-ready lawns, banquets and destination settings', image: 'f06d05d6-c219-4ca7-86b8-6b80f603db18' },
-  { name: 'Picnic spots', description: 'Riverside meadows and forest clearings for day outings', image: '13ed71a2-b5c8-4ef7-86e2-e7066244ac17' },
-  { name: 'Event services', description: 'DJ, sound, lighting, decor, catering, photo & video, planners', image: '6f406ad1-a8f4-4dba-91eb-dd4306cc228f' },
+  { slug: 'farmhouse', name: 'Farmhouses', description: 'Private lawns & pools for birthdays and weekend escapes', image: '313bd5ac-b0be-4841-949e-ec12cd24af3e' },
+  { slug: 'luxury-villa', name: 'Luxury villas', description: 'Designer stays with private pools and full staff', image: '5cf7ea59-6377-48bd-a6f0-6d1abc74e409' },
+  { slug: 'resort', name: 'Resorts', description: 'Full-property bookings for weddings and retreats', image: 'b2f651a9-1640-49ef-9e85-583dca21f24e' },
+  { slug: 'eco-stay', name: 'Eco stays & homestays', description: 'Nature-led escapes and local stays with Chhattisgarhi hospitality', image: '75e458ce-f739-4f0d-9775-0b09a3056488' },
+  { slug: 'hotel', name: 'Hotels', description: 'Comfortable stays for guests, gatherings and every occasion', image: 'ef27c464-72cd-4d97-8cf9-fbe843d32d97' },
+  { slug: 'banquet-hall', name: 'Banquet halls', description: 'Designed for weddings, receptions and grand celebrations', image: 'f06d05d6-c219-4ca7-86b8-6b80f603db18' },
+  { slug: 'lawn', name: 'Lawns & gardens', description: 'Open-air settings for celebrations under the sky', image: '13ed71a2-b5c8-4ef7-86e2-e7066244ac17' },
+  { slug: 'picnic-destination', name: 'Picnic destinations', description: 'Nature-led places for day outings and relaxed gatherings', image: '6f406ad1-a8f4-4dba-91eb-dd4306cc228f' },
+];
+
+export const serviceCategories = [
+  { slug: 'dj-entertainment', name: 'DJ & entertainment', description: 'DJs, anchors, artists and live entertainment that keep the celebration moving.', image: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1200&q=80' },
+  { slug: 'catering', name: 'Catering', description: 'Buffets, live counters, sweets and professional food service for every guest list.', image: 'https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1200&q=80' },
+  { slug: 'decoration', name: 'Decoration & themes', description: 'Stage decor, floral entries, balloons, haldi themes and full venue styling.', image: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&w=1200&q=80' },
+  { slug: 'photography-video', name: 'Photography & video', description: 'Photography, cinematic films, reels and drone coverage to keep every memory.', image: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1200&q=80' },
+  { slug: 'mehndi-makeup', name: 'Mehndi & makeup', description: 'Bridal mehndi, party makeup, hair styling and grooming artists for the big day.', image: 'https://images.unsplash.com/photo-1594647210801-5124307ef727?auto=format&fit=crop&w=1200&q=80' },
+  { slug: 'sound-light-stage', name: 'Sound, lights & stage', description: 'Sound systems, LED walls, lighting rigs, truss, stage and dance-floor setup.', image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80' },
+  { slug: 'tent-furniture', name: 'Tent & furniture', description: 'Shamiana, seating, tables, lounge furniture, generators and on-ground rentals.', image: 'https://images.unsplash.com/photo-1478146896981-b80fe463b330?auto=format&fit=crop&w=1200&q=80' },
+  { slug: 'party-planners', name: 'Party planners', description: 'Birthday, anniversary, corporate and college-event planning from idea to execution.', image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80' },
+];
+
+export const serviceProviders = [
+  { title: 'DJ & live entertainment', tag: 'Music', description: 'Book DJs, anchors, singers, dhol groups and artist acts for weddings, birthdays and college events.', image: serviceCategories[0].image },
+  { title: 'Catering & live counters', tag: 'Food', description: 'Compare caterers for buffets, snacks, desserts, mocktails and regional Chhattisgarhi menus.', image: serviceCategories[1].image },
+  { title: 'Party decoration', tag: 'Decor', description: 'Get balloon decor, theme setups, floral entries, mandap styling and birthday backdrops.', image: serviceCategories[2].image },
+  { title: 'Mehndi & makeup artists', tag: 'Beauty', description: 'Find bridal mehndi, engagement makeup, party looks, hair styling and grooming partners.', image: serviceCategories[4].image },
+  { title: 'Photography, video & drone', tag: 'Memories', description: 'Hire photographers, cinematographers, reels teams and drone crews for complete coverage.', image: serviceCategories[3].image },
+  { title: 'Sound, lighting & LED wall', tag: 'Production', description: 'Book sound, lights, LED screens, stage, truss and dance-floor production in one request.', image: serviceCategories[5].image },
+  { title: 'Tent, furniture & generator', tag: 'Setup', description: 'Arrange tent house support, chairs, tables, lounge seating, coolers and backup power.', image: serviceCategories[6].image },
+  { title: 'Complete party packages', tag: 'Planner', description: 'Let local planners handle vendors, timelines, setup and coordination for your celebration.', image: serviceCategories[7].image },
 ];
 
 export const platformOfferings = [

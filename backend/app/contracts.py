@@ -20,6 +20,11 @@ class Signup(Login):
     role: Literal['customer', 'vendor'] = 'customer'
 
 
+class SupabaseLogin(Input):
+    access_token: str = Field(min_length=20, max_length=10000)
+    role: Literal['customer', 'vendor'] = 'customer'
+
+
 class VenueInput(Input):
     category_id: UUID
     name: str = Field(min_length=3, max_length=200)

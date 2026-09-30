@@ -6,7 +6,7 @@ First working increment of the venue, services, and events marketplace described
 
 - Responsive venue catalogue with city/name, category, date, capacity, and budget filters.
 - Venue detail pages, availability checks, and 15-minute unpaid reservations.
-- Email/password registration and login; Argon2 password hashing; expiring HTTP-only JWT cookies; logout revokes existing sessions.
+- Email/password registration and login; Google sign-in through Supabase Auth; Argon2 password hashing; expiring HTTP-only JWT cookies; logout revokes existing sessions.
 - Customer booking history and unpaid cancellation.
 - Pending vendor registration, approved vendor listing creation/editing, and date blocking.
 - Admin vendor/listing approval queues, platform counts, and late-payment review list.
@@ -58,7 +58,8 @@ The six seeded venues are fictional. The category-matched photographs are illust
 
 1. Create a separate development Supabase project and obtain its PostgreSQL connection string.
 2. Update `backend/.env`: set `DATABASE_URL=postgresql+psycopg://...` (URL-encode password characters), keep SSL enabled using `?sslmode=require`, set `DEMO_MODE=false`, and retain a strong random `JWT_SECRET`.
-3. From `backend`, apply the migration to an **empty database**:
+3. For Google sign-in, enable the Google provider in Supabase Auth and copy the same project URL and publishable key into `backend/.env` as `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` and into `frontend/.env.local` as `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Add `http://127.0.0.1:3000/auth/callback` to the Supabase redirect URLs for local development.
+4. From `backend`, apply the migration to an **empty database**:
 
 ```powershell
 .\.venv\Scripts\python.exe -m alembic upgrade head

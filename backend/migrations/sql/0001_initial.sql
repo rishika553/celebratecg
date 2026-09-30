@@ -229,14 +229,6 @@ CREATE TABLE reviews (
 -- ============================
 -- WISHLIST
 -- ============================
-CREATE TABLE wishlists (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    target_type     VARCHAR(20) NOT NULL, -- 'venue' | 'service' | 'event'
-    target_id       UUID NOT NULL,
-    created_at      TIMESTAMPTZ DEFAULT now(),
-    UNIQUE (customer_id, target_type, target_id)
-);
 
 -- ============================
 -- USEFUL INDEXES
@@ -261,7 +253,7 @@ DECLARE table_name TEXT;
 BEGIN
     FOREACH table_name IN ARRAY ARRAY['users','password_resets','categories','venues',
         'venue_photos','venue_availability','services','service_availability','events',
-        'ticket_types','bookings','ticket_purchases','payments','commissions','reviews','wishlists']
+        'ticket_types','bookings','ticket_purchases','payments','commissions','reviews']
     LOOP
         EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', table_name);
         IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN

@@ -19,7 +19,7 @@ const sections: LegalSection[] = [
       <li><strong>Vendor data:</strong> business and contact information, listing details, photographs, portfolio material, availability, pricing and approval records.</li>
       <li><strong>Booking data:</strong> selected venue, service or event, dates, guest counts, ticket quantities, preferences, status, cancellation reasons and communications.</li>
       <li><strong>Payment data:</strong> order and payment identifiers, amount, status, refund information and limited transaction metadata received from Razorpay. Payment credentials are collected by the payment provider rather than stored in our application database.</li>
-      <li><strong>User content:</strong> reviews, ratings, wishlists, support requests and other material you submit.</li>
+      <li><strong>User content:</strong> reviews, ratings, support requests and other material you submit.</li>
       <li><strong>Technical data:</strong> IP address, browser and device information, request logs, session cookies, security events and approximate location inferred from network information.</li>
     </ul>
   </> },

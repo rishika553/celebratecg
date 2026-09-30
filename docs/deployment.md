@@ -9,7 +9,7 @@ Razorpay --------------------------------------> /api/webhooks/razorpay
 Render scheduled job --------------------------> expired reservation cleanup
 ```
 
-The app currently uses FastAPI-managed, HTTP-only JWT cookies, not Supabase Auth. Supabase supplies PostgreSQL and S3-compatible storage. Resend, password reset, and email verification are not implemented yet.
+The app uses FastAPI-managed, HTTP-only JWT cookies for its application session. Email/password auth is handled by FastAPI, and Google sign-in is verified through Supabase Auth before the backend creates the same application cookie. Supabase supplies PostgreSQL, Auth, and S3-compatible storage. Resend, password reset, and custom auth-email flows are not implemented yet.
 
 ## 1. Prepare Supabase
 
@@ -22,6 +22,15 @@ DATABASE_URL=postgresql+psycopg://USER:URL_ENCODED_PASSWORD@HOST:5432/postgres?s
 ```
 
 Copy the actual host, username, and port from Supabase. URL-encode special characters in the password. Do not put this value in Vercel or a `NEXT_PUBLIC_` variable.
+
+Enable the Google provider in Supabase Auth. Add these redirect URLs in Supabase before testing sign-in:
+
+```text
+http://127.0.0.1:3000/auth/callback
+https://YOUR-VERCEL-DOMAIN/auth/callback
+```
+
+Copy the project URL and publishable key. The publishable key is safe for the browser, but the service-role key must never be exposed or used by this frontend flow.
 
 Create a private Storage bucket named `venue-images`. Generate S3 access credentials in Supabase and copy its S3 endpoint and region. These are S3 access credentials, not the publishable/anon key or service-role JWT. The existing backend reads/writes objects and serves public venue images through `/api/media/...`; the bucket does not need public access. Existing local uploads must be copied to the bucket with their original object keys before switching an existing installation.
 
@@ -45,6 +54,8 @@ Set the prompted environment values:
 | `AWS_SECRET_ACCESS_KEY` | Supabase S3 secret |
 | `AWS_ENDPOINT_URL_S3` | S3 endpoint copied from Supabase |
 | `AWS_REGION` | Storage region copied from Supabase |
+| `SUPABASE_URL` | Supabase project URL, e.g. `https://PROJECT.supabase.co` |
+| `SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key used to validate Google sessions |
 
 Origins must use HTTPS and have no path, wildcard, or trailing slash. Use your actual assigned domain, not the example. Add the custom domain and `www` origin if both serve the app.
 
@@ -79,6 +90,8 @@ Set this server-only Vercel environment variable before building:
 
 ```dotenv
 BACKEND_URL=https://YOUR-API.onrender.com
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 ```
 
 Use the Render service origin only, without `/api`. `frontend/vercel.json` uses `npm ci` and `npm run build`; leave the output directory at the Next.js default. Rebuild after changing `BACKEND_URL`, because rewrites are resolved during the build.
@@ -123,7 +136,7 @@ The first cron invocation may precede the API's first migration and fail because
 
 1. Render `/api/health` returns status and feature flags; `/api/ready` returns 200 only when a database query succeeds. Render uses `/api/ready` as its health check. This is connectivity readiness, not verification of every table or provider.
 2. Vercel `/api/health` reaches the same backend through the rewrite.
-3. Register, log in, reload, and log out through the frontend; confirm cookies are secure and login persists across navigation.
+3. Register with email/password, sign in with Google, reload, and log out through the frontend; confirm cookies are secure and login persists across navigation. Confirm the Google user appears in Supabase Auth and in the backend `users` table.
 4. Create/approve a real vendor and venue. Upload an image and confirm it survives a backend redeploy.
 5. Reserve a venue, verify a second overlapping reservation is rejected, and verify expiry via the scheduled job.
 6. Complete a Razorpay test payment and replay its webhook; the booking must confirm once.

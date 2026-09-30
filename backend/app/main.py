@@ -16,9 +16,9 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from .auth import current_user, dummy_hash, passwords, role, set_session, user_view
 from .config import settings
-from .contracts import ApprovalInput, AvailabilityInput, BookingInput, Login, OfferInput, OfferValidationInput, PhotoOrderInput, Signup, VenueInput, VerifyPayment
+from .contracts import ApprovalInput, AvailabilityInput, BookingInput, Login, OfferInput, OfferValidationInput, PhotoOrderInput, Signup, SupabaseLogin, VenueInput, VerifyPayment
 from .db import get_db
-from .models import Availability, Booking, Category, Offer, Payment, User, Venue, VenuePhoto, Wishlist, now
+from .models import Availability, Booking, Category, Offer, Payment, User, Venue, VenuePhoto, now
 from .storage import objects
 from .reservations import expire_holds
 
@@ -104,7 +104,10 @@ def public_venue(db, venue_id):
 
 def booking_view(db, booking):
     venue = db.get(Venue, booking.venue_id)
+    customer = db.get(User, booking.customer_id)
     return {'id': booking.id, 'venue_id': booking.venue_id, 'venue_name': venue.name, 'booking_date': str(booking.booking_date),
+            'customer_id': booking.customer_id, 'customer_name': customer.name if customer else 'Unknown customer',
+            'customer_email': customer.email if customer else '',
             'guest_count': booking.guest_count, 'base_amount': str(booking.base_amount),
             'discount_amount': str(booking.discount_amount), 'offer_id': booking.offer_id,
             'offer_code': booking.offer_code_snapshot, 'total_amount': str(booking.total_amount), 'status': booking.status,
@@ -219,6 +222,45 @@ def login(data: Login, request: Request, response: Response, db: Session = Depen
     return user_view(user)
 
 
+@app.post('/api/auth/supabase')
+def supabase_login(data: SupabaseLogin, response: Response, db: Session = Depends(get_db)):
+    cfg = settings()
+    if not cfg.supabase_url or not cfg.supabase_publishable_key:
+        raise HTTPException(503, 'Google sign-in is not configured yet.')
+    try:
+        result = httpx.get(
+            f'{cfg.supabase_url.rstrip("/")}/auth/v1/user',
+            headers={'Authorization': f'Bearer {data.access_token}', 'apikey': cfg.supabase_publishable_key},
+            timeout=10,
+        )
+    except httpx.HTTPError:
+        raise HTTPException(502, 'Could not contact Supabase Auth. Please try again.')
+    if result.status_code != 200:
+        raise HTTPException(401, 'Google sign-in could not be verified.')
+    profile = result.json()
+    email = str(profile.get('email') or '').lower().strip()
+    if not email:
+        raise HTTPException(422, 'Supabase did not return an email address.')
+    metadata = profile.get('user_metadata') or {}
+    name = (metadata.get('full_name') or metadata.get('name') or email.split('@')[0]).strip()[:150]
+    if len(name) < 2:
+        name = email.split('@')[0][:150] or 'CelebrateCG user'
+    user = db.scalar(select(User).where(User.email == email))
+    if not user:
+        raise HTTPException(403, 'No CelebrateCG account exists for this Google email. Please create an account first.')
+    changed = False
+    if not user.is_email_verified and profile.get('email_confirmed_at'):
+        user.is_email_verified = True
+        changed = True
+    if user.name == email.split('@')[0] and name != user.name:
+        user.name = name
+        changed = True
+    if changed:
+        db.commit()
+    set_session(response, user)
+    return user_view(user)
+
+
 @app.get('/api/auth/me')
 def me(user: User = Depends(current_user)):
     return user_view(user)
@@ -233,26 +275,63 @@ def logout(response: Response, user: User = Depends(current_user), db: Session =
 
 
 @app.get('/api/categories')
-def categories(db: Session = Depends(get_db)):
-    return [{'id': c.id, 'name': c.name, 'slug': c.slug} for c in db.scalars(select(Category).where(Category.type == 'venue', Category.is_active.is_(True)).order_by(Category.name))]
+def categories(kind: str = Query('venue', pattern='^(venue|service|all)$'), db: Session = Depends(get_db)):
+    query = select(Category).where(Category.is_active.is_(True))
+    if kind != 'all':
+        query = query.where(Category.type == kind)
+    return [{'id': c.id, 'name': c.name, 'slug': c.slug, 'type': c.type}
+            for c in db.scalars(query.order_by(Category.type, Category.name))]
+
+
+@app.get('/api/cities')
+def cities(db: Session = Depends(get_db)):
+    query = (select(Venue).join(Category).join(User, Venue.vendor_id == User.id)
+             .where(Venue.approval_status == 'approved', Venue.is_active.is_(True),
+                    Category.is_active.is_(True), User.approval_status == 'approved'))
+    grouped = {}
+    for venue in db.scalars(query.order_by(Venue.location_text, Venue.created_at)):
+        city = venue.location_text.split(',')[0].strip()
+        if not city:
+            continue
+        record = grouped.setdefault(city.casefold(), {'name': city, 'venue_count': 0, 'image': ''})
+        record['venue_count'] += 1
+        if not record['image']:
+            photo = db.scalar(select(VenuePhoto).where(VenuePhoto.venue_id == venue.id).order_by(VenuePhoto.sort_order))
+            if photo:
+                record['image'] = photo_url(photo)
+    return sorted(grouped.values(), key=lambda item: (-item['venue_count'], item['name']))
 
 
 @app.get('/api/venues')
-def venues(q: str = '', category: str = '', guests: int = Query(0, ge=0), max_price: Decimal | None = Query(None, gt=0), booking_date: date | None = None, db: Session = Depends(get_db)):
+def venues(q: str = '', city: str = '', category: str = '', guests: int = Query(0, ge=0),
+           min_price: Decimal | None = Query(None, ge=0), max_price: Decimal | None = Query(None, gt=0),
+           facility: list[str] = Query(default=[]), booking_date: date | None = None,
+           db: Session = Depends(get_db)):
     query = select(Venue).join(Category).join(User, Venue.vendor_id == User.id).where(Venue.approval_status == 'approved', Venue.is_active.is_(True), Category.is_active.is_(True), User.approval_status == 'approved')
     if q:
         query = query.where(or_(Venue.name.icontains(q, autoescape=True), Venue.location_text.icontains(q, autoescape=True)))
+    if city:
+        query = query.where(Venue.location_text.icontains(city, autoescape=True))
     if category:
         query = query.where(Category.slug == category)
     if guests:
         query = query.where(Venue.max_guests >= guests)
+    if min_price is not None:
+        query = query.where(Venue.price_per_day >= min_price)
     if max_price:
         query = query.where(Venue.price_per_day <= max_price)
     if booking_date:
         occupied = select(Booking.venue_id).where(Booking.booking_date == booking_date, or_(Booking.status.in_(['confirmed', 'completed']), (Booking.status == 'pending') & (Booking.expires_at > now())))
         blocked = select(Availability.venue_id).where(Availability.date == booking_date, Availability.is_available.is_(False))
         query = query.where(Venue.id.not_in(occupied), Venue.id.not_in(blocked))
-    return [venue_view(db, v) for v in db.scalars(query.order_by(Venue.created_at).limit(100))]
+    results = list(db.scalars(query.order_by(Venue.created_at).limit(100)))
+    requested_facilities = [value.strip().casefold() for value in facility if value.strip()]
+    if requested_facilities:
+        results = [venue for venue in results if all(
+            any(requested in str(available).casefold() for available in (venue.facilities or []))
+            for requested in requested_facilities
+        )]
+    return [venue_view(db, venue) for venue in results]
 
 
 @app.get('/api/venues/{venue_id}')
@@ -266,49 +345,6 @@ def availability(venue_id: UUID, day: date, db: Session = Depends(get_db)):
     block = db.scalar(select(Availability).where(Availability.venue_id == str(venue_id), Availability.date == day))
     active = db.scalar(select(Booking).where(Booking.venue_id == str(venue_id), Booking.booking_date == day, or_(Booking.status.in_(['confirmed', 'completed']), (Booking.status == 'pending') & (Booking.expires_at > now()))))
     return {'date': str(day), 'available': day >= business_today() and not active and not (block and not block.is_available)}
-
-
-@app.get('/api/favourites')
-def favourites(user: User = Depends(role('customer')), db: Session = Depends(get_db)):
-    query = (select(Venue)
-             .join(Wishlist, Wishlist.target_id == Venue.id)
-             .join(Category, Venue.category_id == Category.id)
-             .join(User, Venue.vendor_id == User.id)
-             .where(Wishlist.customer_id == user.id, Wishlist.target_type == 'venue',
-                    Venue.approval_status == 'approved', Venue.is_active.is_(True),
-                    Category.is_active.is_(True), User.approval_status == 'approved')
-             .order_by(Wishlist.created_at.desc()))
-    return [venue_view(db, venue) for venue in db.scalars(query)]
-
-
-@app.get('/api/favourites/ids')
-def favourite_ids(user: User = Depends(role('customer')), db: Session = Depends(get_db)):
-    return list(db.scalars(select(Wishlist.target_id).where(
-        Wishlist.customer_id == user.id, Wishlist.target_type == 'venue')))
-
-
-@app.post('/api/favourites/{venue_id}', status_code=201)
-def add_favourite(venue_id: UUID, user: User = Depends(role('customer')), db: Session = Depends(get_db)):
-    venue = public_venue(db, venue_id)
-    existing = db.scalar(select(Wishlist).where(
-        Wishlist.customer_id == user.id, Wishlist.target_type == 'venue', Wishlist.target_id == venue.id))
-    if not existing:
-        db.add(Wishlist(customer_id=user.id, target_type='venue', target_id=venue.id))
-        try:
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-    return {'saved': True, 'venue_id': venue.id}
-
-
-@app.delete('/api/favourites/{venue_id}')
-def remove_favourite(venue_id: UUID, user: User = Depends(role('customer')), db: Session = Depends(get_db)):
-    favourite = db.scalar(select(Wishlist).where(
-        Wishlist.customer_id == user.id, Wishlist.target_type == 'venue', Wishlist.target_id == str(venue_id)))
-    if favourite:
-        db.delete(favourite)
-        db.commit()
-    return {'saved': False, 'venue_id': str(venue_id)}
 
 
 @app.post('/api/bookings', status_code=201)

@@ -11,10 +11,12 @@ export default function Header() {
   return <header className={`header ${menuOpen ? 'menu-open' : ''}`}>
     <Link href="/" className="brand" onClick={closeMenu}><span className="brand-icon"><CelebrationMark size={28} /></span>celebrate<span className="brand-cg">cg</span><span className="brand-dot">.</span></Link>
     <nav className="main-nav" aria-label="Main navigation">
-      <Link href="/#venues" onClick={closeMenu}>Find a venue</Link>
-      <Link href="/#categories" onClick={closeMenu}>Categories</Link>
-      <Link href="/#cities" onClick={closeMenu}>Cities &amp; map</Link>
-      <Link href="/#contact" onClick={closeMenu}>Contact</Link>
+      <Link href="/" onClick={closeMenu}>Home</Link>
+      <Link href="/find-venue" onClick={closeMenu}>Find a venue</Link>
+      <Link href="/categories" onClick={closeMenu}>Categories</Link>
+      <Link href="/#services" onClick={closeMenu}>Services</Link>
+      <Link href="/cities" onClick={closeMenu}>Cities &amp; map</Link>
+      <Link href="/contact" onClick={closeMenu}>Contact</Link>
       <Link href={user?.role === 'vendor' ? '/dashboard' : '/signup?role=vendor'} className="mobile-nav-link" onClick={closeMenu}>List your space <ArrowUpRight size={15} /></Link>
       <Link href="/terms" className="mobile-nav-link" onClick={closeMenu}>Terms &amp; Conditions</Link>
       <Link href="/privacy" className="mobile-nav-link" onClick={closeMenu}>Privacy Policy</Link>
