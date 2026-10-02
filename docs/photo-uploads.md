@@ -17,4 +17,6 @@ AWS_ENDPOINT_URL_S3=...
 AWS_REGION=...
 ```
 
+For local development, put these server-only settings in `backend/.env`. For deployment, set them on the backend host. Supabase S3 credentials work with these `AWS_*` variable names without an AWS account. After configuration, run `backend\.venv\Scripts\python.exe scripts/check-supabase-storage.py` from the repository root to verify the bucket, temporary upload/download, media API, and cleanup without exposing credentials.
+
 The database stores immutable object keys, not image bytes. S3 requests use Signature V4 and path-style addressing. Neon Object Storage can supply the standard variables above for projects in its supported `us-east-2` region. AWS S3 and compatible providers use the same application configuration.

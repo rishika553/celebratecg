@@ -2,6 +2,8 @@ import os
 os.environ['JWT_SECRET'] = 'test-only-secret-that-is-longer-than-32-characters'
 os.environ['DATABASE_URL'] = 'sqlite://'
 os.environ['DEMO_MODE'] = 'false'
+os.environ['APP_ENV'] = 'development'
+os.environ['STORAGE_BACKEND'] = 'local'
 os.environ['RAZORPAY_KEY_SECRET'] = 'test_provider_secret'
 os.environ['RAZORPAY_WEBHOOK_SECRET'] = 'test_webhook_secret'
 

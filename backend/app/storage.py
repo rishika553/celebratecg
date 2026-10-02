@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 from .config import settings
 
 
@@ -9,9 +8,7 @@ class ObjectStorage:
 
     def put(self, key: str, data: bytes, content_type: str):
         if self.cfg.storage_backend == 's3':
-            import boto3
-            boto3.client('s3', endpoint_url=os.getenv('AWS_ENDPOINT_URL_S3'),
-                         region_name=os.getenv('AWS_REGION'), config=self._s3_config()).put_object(
+            self._s3_client().put_object(
                 Bucket=self.cfg.storage_bucket, Key=key, Body=data, ContentType=content_type,
                 CacheControl='public, max-age=31536000, immutable')
             return
@@ -21,11 +18,18 @@ class ObjectStorage:
 
     def get(self, key: str):
         if self.cfg.storage_backend == 's3':
-            import boto3
-            result = boto3.client('s3', endpoint_url=os.getenv('AWS_ENDPOINT_URL_S3'),
-                                  region_name=os.getenv('AWS_REGION'), config=self._s3_config()).get_object(
-                Bucket=self.cfg.storage_bucket, Key=key)
-            return result['Body'].read(), result.get('ContentType', 'application/octet-stream')
+            from botocore.exceptions import ClientError
+            try:
+                result = self._s3_client().get_object(
+                    Bucket=self.cfg.storage_bucket, Key=key)
+            except ClientError as exc:
+                if exc.response.get('Error', {}).get('Code') in ('NoSuchKey', 'NotFound', '404'):
+                    raise FileNotFoundError(key) from exc
+                raise
+            try:
+                return result['Body'].read(), result.get('ContentType', 'application/octet-stream')
+            finally:
+                result['Body'].close()
         path = self._local_path(key)
         if not path.is_file():
             raise FileNotFoundError(key)
@@ -34,9 +38,7 @@ class ObjectStorage:
 
     def delete(self, key: str):
         if self.cfg.storage_backend == 's3':
-            import boto3
-            boto3.client('s3', endpoint_url=os.getenv('AWS_ENDPOINT_URL_S3'),
-                         region_name=os.getenv('AWS_REGION'), config=self._s3_config()).delete_object(
+            self._s3_client().delete_object(
                 Bucket=self.cfg.storage_bucket, Key=key)
             return
         path = self._local_path(key)
@@ -50,10 +52,19 @@ class ObjectStorage:
             raise ValueError('Invalid object key.')
         return path
 
+    def _s3_client(self):
+        import boto3
+        return boto3.client('s3', endpoint_url=self.cfg.aws_endpoint_url_s3,
+                            region_name=self.cfg.aws_region,
+                            aws_access_key_id=self.cfg.aws_access_key_id.get_secret_value(),
+                            aws_secret_access_key=self.cfg.aws_secret_access_key.get_secret_value(),
+                            config=self._s3_config())
+
     @staticmethod
     def _s3_config():
         from botocore.config import Config
-        return Config(signature_version='s3v4', s3={'addressing_style': 'path'})
+        return Config(signature_version='s3v4', s3={'addressing_style': 'path'},
+                      connect_timeout=10, read_timeout=30, retries={'max_attempts': 2})
 
 
 objects = ObjectStorage()

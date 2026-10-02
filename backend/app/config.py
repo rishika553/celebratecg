@@ -1,6 +1,6 @@
 from functools import lru_cache
-import os
 from urllib.parse import urlsplit
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     storage_backend: str = 'local'
     storage_bucket: str = 'venue-images'
     storage_local_dir: str = './uploads'
+    aws_access_key_id: SecretStr = Field(default=SecretStr(''), repr=False)
+    aws_secret_access_key: SecretStr = Field(default=SecretStr(''), repr=False)
+    aws_endpoint_url_s3: str = ''
+    aws_region: str = ''
     supabase_url: str = ''
     supabase_publishable_key: str = ''
 
@@ -40,8 +44,8 @@ class Settings(BaseSettings):
         if self.app_env == 'production' and self.storage_backend != 's3':
             raise RuntimeError('Production requires STORAGE_BACKEND=s3.')
         if self.storage_backend == 's3':
-            required = ('AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_ENDPOINT_URL_S3', 'AWS_REGION')
-            if any(not os.getenv(name) for name in required):
+            if not all((self.aws_access_key_id.get_secret_value(), self.aws_secret_access_key.get_secret_value(),
+                        self.aws_endpoint_url_s3, self.aws_region)):
                 raise RuntimeError('S3 storage requires AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL_S3, and AWS_REGION.')
 
 
