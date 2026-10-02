@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import FindVenueMarketplace from '@/components/find-venue-marketplace';
 
 export const metadata: Metadata = {
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function FindVenuePage() {
-  return <FindVenueMarketplace />;
+  return <Suspense fallback={<main className="find-venue-page"><div className="section"><div className="venue-grid" aria-label="Loading venues">{[1, 2, 3].map(item => <div className="skeleton" key={item} />)}</div></div></main>}><FindVenueMarketplace /></Suspense>;
 }

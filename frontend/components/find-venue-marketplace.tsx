@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ArrowRight, ArrowUpRight, CalendarDays, MapPin, Search, SlidersHorizontal, Users, X } from 'lucide-react';
 import VenueBookingCard from '@/components/venue-booking-card';
 import VenueCard from '@/components/venue-card';
@@ -11,12 +12,16 @@ import { categories as venueVisuals } from '@/lib/site-content';
 type SortMode = 'featured' | 'price-asc' | 'price-desc' | 'newest';
 
 export default function FindVenueMarketplace() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
+  const initialDate = searchParams.get('booking_date') || '';
+  const initialGuests = searchParams.get('guests') || '';
   const [venues, setVenues] = useState<Venue[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [city, setCity] = useState('');
-  const [date, setDate] = useState('');
-  const [guests, setGuests] = useState('');
+  const [date, setDate] = useState(initialDate);
+  const [guests, setGuests] = useState(initialGuests);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [category, setCategory] = useState('');
@@ -47,11 +52,15 @@ export default function FindVenueMarketplace() {
   }
 
   useEffect(() => {
-    Promise.all([api<Venue[]>('/venues'), api<Category[]>('/categories')])
+    const params = new URLSearchParams();
+    if (initialQuery) params.set('q', initialQuery);
+    if (initialDate) params.set('booking_date', initialDate);
+    if (initialGuests) params.set('guests', initialGuests);
+    Promise.all([api<Venue[]>(`/venues?${params}`), api<Category[]>('/categories')])
       .then(([venueData, categoryData]) => { setVenues(venueData); setCategories(categoryData); })
       .catch(reason => setError((reason as Error).message || 'Unable to load venues.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialDate, initialGuests, initialQuery]);
 
 
   const cityOptions = useMemo(() => [...new Set(venues.map(venue => venue.location_text.split(',')[0].trim()).filter(Boolean))].sort(), [venues]);

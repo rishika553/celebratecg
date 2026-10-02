@@ -4,8 +4,11 @@ import { useRouter } from 'next/navigation';
 import { ArrowRight, CalendarDays, Check, MapPin, Users, X } from 'lucide-react';
 import { api, Booking, money, today, Venue } from '@/lib/api';
 import { useSession } from '@/components/session';
+import { site } from '@/lib/site-content';
 
-export default function VenueBookingCard({ venue, onClose }: { venue: Venue; onClose: () => void }) {
+export type BookingCardVenue = Pick<Venue, 'id' | 'name' | 'photos' | 'category' | 'location_text'> & Partial<Pick<Venue, 'max_guests' | 'price_per_day'>>;
+
+export default function VenueBookingCard({ venue, onClose, preview = false }: { venue: BookingCardVenue; onClose: () => void; preview?: boolean }) {
   const router = useRouter();
   const { user } = useSession();
   const [error, setError] = useState('');
@@ -18,16 +21,21 @@ export default function VenueBookingCard({ venue, onClose }: { venue: Venue; onC
     let active = true;
     setAvailable(null);
     setError('');
-    if (date) {
+    if (date && !preview) {
       api<{ available: boolean }>(`/venues/${venue.id}/availability?day=${date}`)
         .then(result => { if (active) setAvailable(result.available); })
         .catch(e => { if (active) setError((e as Error).message); });
     }
     return () => { active = false; };
-  }, [date, venue.id]);
+  }, [date, venue.id, preview]);
 
   async function reserve(e: FormEvent) {
     e.preventDefault();
+    if (preview) {
+      const message = `Hello CelebrateCG, I'd like to enquire about booking ${venue.name} on ${date} for ${guests} guests. Please share available venues and prices.`;
+      window.open(`${site.whatsapp}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
+      return;
+    }
     if (!user) { router.push('/login'); return; }
     setBusy(true);
     setError('');
@@ -50,18 +58,18 @@ export default function VenueBookingCard({ venue, onClose }: { venue: Venue; onC
       <div className="booking-now-summary">
         <p className="location"><MapPin size={14} /> {venue.location_text}</p>
         <h2 id="booking-title">{venue.name}</h2>
-        <p><Users size={15} /> Up to {venue.max_guests.toLocaleString('en-IN')} guests</p>
+        <p><Users size={15} /> {preview ? 'Preview · Availability to be confirmed' : `Up to ${venue.max_guests?.toLocaleString('en-IN')} guests`}</p>
       </div>
-      <div className="booking-price"><strong>{money(venue.price_per_day)}</strong><span> / day</span></div>
-      <p className="muted">Choose your date and reserve this space directly from here.</p>
+      <div className="booking-price"><strong>{preview ? 'Request a quote' : money(venue.price_per_day ?? '0')}</strong>{!preview && <span> / day</span>}</div>
+      <p className="muted">{preview ? 'Choose your date and guests to enquire about a reservation. This preview is not a confirmed venue listing.' : 'Choose your date and reserve this space directly from here.'}</p>
       <form onSubmit={reserve}>
         <label><CalendarDays size={15} /> Your celebration date<input type="date" required min={today()} value={date} onChange={e => setDate(e.target.value)} /></label>
         {available !== null && <p className={available ? 'success-text' : 'error-message'}>{available ? 'This date is available.' : 'This date is unavailable. Try another.'}</p>}
-        <label><Users size={15} /> Number of guests<input type="number" required min="1" max={venue.max_guests} placeholder={`Up to ${venue.max_guests}`} value={guests} onChange={e => setGuests(e.target.value)} /></label>
-        <div className="price-row"><span>Venue · 1 day</span><span>{money(venue.price_per_day)}</span></div>
+        <label><Users size={15} /> Number of guests<input type="number" required min="1" max={preview ? undefined : venue.max_guests} placeholder={preview ? 'Your group size' : `Up to ${venue.max_guests}`} value={guests} onChange={e => setGuests(e.target.value)} /></label>
+        {!preview && <div className="price-row"><span>Venue · 1 day</span><span>{money(venue.price_per_day ?? '0')}</span></div>}
         {error && <p className="error-message" role="alert">{error}</p>}
-        {user && user.role !== 'customer' ? <p className="form-note">Sign in with a customer account to reserve this venue.</p> : <button className="button button-primary full" disabled={busy || available === false || (Boolean(date) && available === null)}>{busy ? 'Reserving...' : user ? 'Reserve this date' : 'Sign in to reserve'}<ArrowRight size={16} /></button>}
-        <p className="booking-note"><Check size={14} /> Your date is held for 15 minutes. Complete payment from your dashboard to confirm.</p>
+        {!preview && user && user.role !== 'customer' ? <p className="form-note">Sign in with a customer account to reserve this venue.</p> : <button className="button button-primary full" disabled={busy || (!preview && (available === false || (Boolean(date) && available === null)))}>{preview ? 'Send booking enquiry' : busy ? 'Reserving...' : user ? 'Reserve this date' : 'Sign in to reserve'}<ArrowRight size={16} /></button>}
+        <p className="booking-note"><Check size={14} /> {preview ? 'Opens WhatsApp with your enquiry. Availability and price must be confirmed before booking.' : 'Your date is held for 15 minutes. Complete payment from your dashboard to confirm.'}</p>
       </form>
     </aside>
   </div>;
