@@ -1,4 +1,7 @@
-param([string]$Python = 'py')
+param(
+    [string]$Python = 'py',
+    [switch]$SeedDemoData
+)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $projectRoot
@@ -9,13 +12,23 @@ try {
     }
     & backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.lock.txt
     if ($LASTEXITCODE -ne 0) { throw 'Backend dependency installation failed.' }
-    & backend/.venv/Scripts/python.exe -c "from pathlib import Path; import secrets; p=Path('backend/.env'); p.write_text('DATABASE_URL=sqlite:///./celebratecg.db\nAPP_ENV=development\nDEMO_MODE=true\nJWT_SECRET='+secrets.token_urlsafe(48)+'\nALLOWED_ORIGINS=http://127.0.0.1:3000,http://localhost:3000\n', encoding='utf-8') if not p.exists() else None"
-    if ($LASTEXITCODE -ne 0) { throw 'Local configuration creation failed.' }
-    Push-Location backend
-    try {
-        & .venv/Scripts/python.exe -m app.bootstrap --demo
-        if ($LASTEXITCODE -ne 0) { throw 'Demo initialization failed. Check backend/.env.' }
-    } finally { Pop-Location }
+    if (-not (Test-Path 'backend/.env')) {
+        Copy-Item 'backend/.env.example' 'backend/.env'
+        & backend/.venv/Scripts/python.exe -c "from pathlib import Path; import secrets; p=Path('backend/.env'); s=p.read_text(encoding='utf-8'); p.write_text(s.replace('replace-with-a-random-secret-at-least-32-characters', secrets.token_urlsafe(48)), encoding='utf-8')"
+        if ($LASTEXITCODE -ne 0) { throw 'Local configuration creation failed.' }
+        throw 'Created backend/.env. Set DATABASE_URL to your Supabase PostgreSQL connection string, then run setup again.'
+    }
+    & backend/.venv/Scripts/python.exe scripts/check-supabase.py
+    if ($LASTEXITCODE -ne 0) { throw 'Configure a working PostgreSQL DATABASE_URL in backend/.env, then run setup again.' }
+    & backend/.venv/Scripts/python.exe scripts/initialize-supabase.py
+    if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL initialization failed.' }
+    if ($SeedDemoData) {
+        Push-Location backend
+        try {
+            & .venv/Scripts/python.exe -m app.bootstrap --demo
+            if ($LASTEXITCODE -ne 0) { throw 'Demo initialization failed. Set DEMO_MODE=true only on a development database.' }
+        } finally { Pop-Location }
+    }
     Push-Location frontend
     try {
         npm.cmd ci

@@ -4,7 +4,7 @@ import getpass
 from sqlalchemy import select
 from .auth import passwords
 from .config import settings
-from .db import Base, engine, SessionLocal
+from .db import SessionLocal
 from .models import Category, User, Venue, VenuePhoto
 
 PHOTOS = [
@@ -61,9 +61,8 @@ def main():
         parser.error('--refresh-demo-photos requires --demo')
     settings().validate_runtime()
     if args.demo:
-        if settings().app_env == 'production' or not settings().demo_mode or not settings().database_url.startswith('sqlite'):
-            raise SystemExit('Demo setup requires local SQLite, development mode, and DEMO_MODE=true.')
-        Base.metadata.create_all(engine)
+        if settings().app_env != 'development' or not settings().demo_mode or not settings().database_url.startswith('postgresql+psycopg://'):
+            raise SystemExit('Demo setup requires a development PostgreSQL database and DEMO_MODE=true.')
     with SessionLocal() as db:
         if args.demo or args.categories:
             seed_categories(db)

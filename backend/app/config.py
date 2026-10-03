@@ -1,12 +1,12 @@
 from functools import lru_cache
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', extra='ignore')
-    database_url: str = 'sqlite:///./celebratecg.db'
+    database_url: str = ''
     app_env: str = 'development'
     demo_mode: bool = False
     jwt_secret: str = ''
@@ -31,8 +31,17 @@ class Settings(BaseSettings):
     def validate_runtime(self):
         if len(self.jwt_secret) < 32 or self.jwt_secret.startswith('replace-with'):
             raise RuntimeError('Set JWT_SECRET to a random secret of at least 32 characters in backend/.env.')
-        if self.app_env == 'production' and (self.demo_mode or not self.database_url.startswith('postgresql+psycopg://')):
-            raise RuntimeError('Production requires DATABASE_URL=postgresql+psycopg://... and DEMO_MODE=false.')
+        test_sqlite = self.app_env == 'test' and self.database_url.startswith('sqlite')
+        if not test_sqlite:
+            parsed_database = urlsplit(self.database_url)
+            if parsed_database.scheme != 'postgresql+psycopg':
+                raise RuntimeError('Local and production environments require DATABASE_URL=postgresql+psycopg://...')
+            if parsed_database.hostname not in ('localhost', '127.0.0.1'):
+                ssl_mode = parse_qs(parsed_database.query).get('sslmode', [''])[0].lower()
+                if ssl_mode not in ('require', 'verify-ca', 'verify-full'):
+                    raise RuntimeError('Remote PostgreSQL connections require sslmode=require (or stricter) in DATABASE_URL.')
+        if self.app_env == 'production' and self.demo_mode:
+            raise RuntimeError('Production requires DEMO_MODE=false.')
         if self.app_env == 'production':
             if not self.origins:
                 raise RuntimeError('Production requires at least one ALLOWED_ORIGINS frontend origin.')

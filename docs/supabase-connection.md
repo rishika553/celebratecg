@@ -1,6 +1,6 @@
 # Supabase database connection
 
-The local application uses **Next.js → FastAPI → Supabase PostgreSQL**. The database URL is stored only in the ignored `backend/.env`; browser requests use `/api` through the Next.js backend rewrite.
+Both local and production applications use **Next.js → FastAPI → Supabase PostgreSQL**. The same SQLAlchemy models and Alembic migrations run in both environments; each environment supplies its own server-only `DATABASE_URL`. The local URL is stored only in the ignored `backend/.env`, and browser requests use `/api` through the Next.js backend rewrite.
 
 Database initialization applies versioned Alembic migrations and the required category catalogue. It does not copy the old SQLite demo database or create demo accounts/venues. Existing PostgreSQL tables without recognized migration tracking stop automatic initialization.
 

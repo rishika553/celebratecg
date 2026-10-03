@@ -46,6 +46,21 @@ def test_production_accepts_exact_frontend_origins(monkeypatch):
     cfg.validate_runtime()
 
 
+def test_development_rejects_sqlite_database():
+    cfg = Settings(_env_file=None, app_env='development', demo_mode=False,
+                   database_url='sqlite:///./celebratecg.db', jwt_secret='x' * 48)
+    with pytest.raises(RuntimeError, match='Local and production environments require'):
+        cfg.validate_runtime()
+
+
+def test_remote_postgres_requires_tls():
+    cfg = Settings(_env_file=None, app_env='development', demo_mode=False,
+                   database_url='postgresql+psycopg://user:password@db.example.com/postgres',
+                   jwt_secret='x' * 48)
+    with pytest.raises(RuntimeError, match='sslmode'):
+        cfg.validate_runtime()
+
+
 def test_cleanup_is_repeatable_and_preserves_confirmed_and_active_holds(context):
     with context['sessions']() as db:
         records = []

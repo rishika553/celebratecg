@@ -28,7 +28,9 @@ If the Windows `py` launcher is broken, pass a working Python executable:
 .\scripts\setup-local.ps1 -Python 'C:\path\to\python.exe'
 ```
 
-Setup creates a Python virtual environment, installs locked dependencies, generates a random local JWT secret, and seeds SQLite. Existing `.env` files are preserved. It refuses to seed demo data against PostgreSQL or production.
+Setup creates a Python virtual environment, installs locked dependencies, and generates a random local JWT secret. On first run it creates `backend/.env` and asks you to add a Supabase PostgreSQL connection string; the next run applies the same Alembic migrations used in production. Existing `.env` files are preserved.
+
+PostgreSQL is the only database used by the running application in both local and production environments. Use separate Supabase development and production databases to avoid exposing production data during development. To add fictional sample records to a development database, set `DEMO_MODE=true` and run `./scripts/setup-local.ps1 -SeedDemoData`.
 
 Open two terminals from the project root:
 
@@ -44,7 +46,7 @@ Visit http://127.0.0.1:3000. API documentation: http://127.0.0.1:8000/docs.
 
 Use the same hostname consistently during a session because cookies are host-specific.
 
-Local-only accounts (password for each: `CelebrateDemo123!`):
+Optional demo accounts after running setup with `-SeedDemoData` (password for each: `CelebrateDemo123!`):
 
 | Account | Role |
 | --- | --- |
@@ -52,11 +54,11 @@ Local-only accounts (password for each: `CelebrateDemo123!`):
 | vendor@example.com | Approved vendor |
 | admin@example.com | Admin |
 
-The six seeded venues are fictional. The category-matched photographs are illustrative venue references; see [image sources](docs/image-sources.md) for original properties and attribution. Cormorant Garamond and DM Sans are bundled locally through Fontsource with system fallbacks. Neither implies a real venue partnership. SQLite and demo accounts are development conveniences, not the production architecture.
+When explicitly seeded, the sample venues are fictional. The category-matched photographs are illustrative venue references; see [image sources](docs/image-sources.md) for original properties and attribution. Cormorant Garamond and DM Sans are bundled locally through Fontsource with system fallbacks. Neither implies a real venue partnership.
 
 ## Connect Supabase
 
-1. Create a separate development Supabase project and obtain its PostgreSQL connection string.
+1. Create a separate development Supabase project and obtain its PostgreSQL connection string. Production uses the same PostgreSQL schema and migrations with a different `DATABASE_URL`.
 2. Update `backend/.env`: set `DATABASE_URL=postgresql+psycopg://...` (URL-encode password characters), keep SSL enabled using `?sslmode=require`, set `DEMO_MODE=false`, and retain a strong random `JWT_SECRET`.
 3. For Google sign-in, enable the Google provider in Supabase Auth and copy the same project URL and publishable key into `backend/.env` as `SUPABASE_URL` / `SUPABASE_PUBLISHABLE_KEY` and into `frontend/.env.local` as `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Add `http://127.0.0.1:3000/auth/callback` to the Supabase redirect URLs for local development.
 4. From `backend`, apply the migration to an **empty database**:
@@ -98,7 +100,7 @@ npm.cmd run typecheck
 npm.cmd run build
 ```
 
-Tests use isolated SQLite databases and mocked payment provider calls. They cover concurrent reservation attempts, expiry, access controls, approval flow, forged/mismatched payments, duplicate notifications, late payments, and logout revocation. They do **not** replace PostgreSQL integration tests or a real Razorpay test-mode payment.
+Tests use isolated, test-only SQLite databases and mocked payment provider calls; SQLite cannot be selected by a running development or production app. They cover concurrent reservation attempts, expiry, access controls, approval flow, forged/mismatched payments, duplicate notifications, late payments, and logout revocation. They do **not** replace PostgreSQL integration tests or a real Razorpay test-mode payment.
 
 ## Deployment preparation
 

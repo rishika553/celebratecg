@@ -9,7 +9,7 @@ Razorpay --------------------------------------> /api/webhooks/razorpay
 Render scheduled job --------------------------> expired reservation cleanup
 ```
 
-The app uses FastAPI-managed, HTTP-only JWT cookies for its application session. Email/password auth is handled by FastAPI, and Google sign-in is verified through Supabase Auth before the backend creates the same application cookie. Supabase supplies PostgreSQL, Auth, and S3-compatible storage. Resend, password reset, and custom auth-email flows are not implemented yet.
+The app uses the same PostgreSQL data layer and Alembic migrations locally and in production; only `DATABASE_URL` changes. Use separate development and production databases so local mistakes cannot affect live data. FastAPI manages HTTP-only JWT cookies and email/password auth, and verifies Google sign-in through Supabase Auth before creating the same application cookie. Supabase also supplies S3-compatible storage. Resend, password reset, and custom auth-email flows are not implemented yet.
 
 ## 1. Prepare Supabase
 
@@ -152,7 +152,7 @@ npm run typecheck
 npm run build
 ```
 
-The API test suite uses SQLite and mocked payment calls. A successful local build is not a live Vercel/Render deployment or a PostgreSQL integration test. Before public launch, complete PostgreSQL/payment UAT and the existing README's remaining production-hardening work, including shared rate limiting and account recovery. The current login limiter is per process; the Blueprint uses one API worker.
+The API test suite uses isolated, test-only SQLite databases and mocked payment calls; application environments cannot select SQLite. A successful local build is not a live Vercel/Render deployment or a PostgreSQL integration test. Before public launch, complete PostgreSQL/payment UAT and the existing README's remaining production-hardening work, including shared rate limiting and account recovery. The current login limiter is per process; the Blueprint uses one API worker.
 
 ## Troubleshooting and rollback
 
