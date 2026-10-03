@@ -14,17 +14,19 @@ type SortMode = 'featured' | 'price-asc' | 'price-desc' | 'newest';
 export default function FindVenueMarketplace() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
+  const initialCity = searchParams.get('city') || '';
+  const initialCategory = searchParams.get('category') || '';
   const initialDate = searchParams.get('booking_date') || '';
   const initialGuests = searchParams.get('guests') || '';
   const [venues, setVenues] = useState<Venue[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [query, setQuery] = useState(initialQuery);
-  const [city, setCity] = useState('');
+  const [city, setCity] = useState(initialCity);
   const [date, setDate] = useState(initialDate);
   const [guests, setGuests] = useState(initialGuests);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState(initialCategory);
   const [sort, setSort] = useState<SortMode>('featured');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -54,13 +56,15 @@ export default function FindVenueMarketplace() {
   useEffect(() => {
     const params = new URLSearchParams();
     if (initialQuery) params.set('q', initialQuery);
+    if (initialCity) params.set('city', initialCity);
+    if (initialCategory) params.set('category', initialCategory);
     if (initialDate) params.set('booking_date', initialDate);
     if (initialGuests) params.set('guests', initialGuests);
     Promise.all([api<Venue[]>(`/venues?${params}`), api<Category[]>('/categories')])
       .then(([venueData, categoryData]) => { setVenues(venueData); setCategories(categoryData); })
       .catch(reason => setError((reason as Error).message || 'Unable to load venues.'))
       .finally(() => setLoading(false));
-  }, [initialDate, initialGuests, initialQuery]);
+  }, [initialCategory, initialCity, initialDate, initialGuests, initialQuery]);
 
 
   const cityOptions = useMemo(() => [...new Set(venues.map(venue => venue.location_text.split(',')[0].trim()).filter(Boolean))].sort(), [venues]);

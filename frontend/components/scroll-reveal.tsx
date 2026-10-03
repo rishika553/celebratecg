@@ -5,11 +5,16 @@ import { useEffect } from 'react';
 const selector = [
   '.search-wrap',
   '.catalogue .section-heading',
+  '.venue-preview-note',
   '.category-tabs',
   '.venue-card',
+  '.cinematic-image',
+  '.content-section > .section-heading',
   '.value-card',
+  '.offering-card',
+  '.service-provider-card',
   '.launch-category',
-  '.city-map-grid',
+  '.city-selector button',
   '.benefit-card',
   '.referral-section',
   '.waitlist-section',
@@ -26,6 +31,8 @@ const selector = [
 const cardSelector = [
   '.venue-card',
   '.value-card',
+  '.offering-card',
+  '.service-provider-card',
   '.launch-category',
   '.benefit-card',
   '.booking-item',
@@ -73,11 +80,12 @@ export default function ScrollReveal() {
         caption?.style.setProperty('--hero-caption-opacity', `${1 - progress * 0.7 * mobileStrength}`);
       }
 
-      document.querySelectorAll<HTMLElement>('.cinematic-image').forEach(image => {
+      document.querySelectorAll<HTMLElement>('.cinematic-image').forEach((image, index) => {
         const rect = image.getBoundingClientRect();
         if (rect.bottom < -80 || rect.top > viewportHeight + 80) return;
         const imageCenter = rect.top + rect.height / 2;
         const viewportProgress = clamp((viewportHeight / 2 - imageCenter) / viewportHeight, -0.7, 0.7);
+        image.style.setProperty('--image-parallax-x', `${viewportProgress * 9 * (index % 2 ? -1 : 1) * mobileStrength}px`);
         image.style.setProperty('--image-parallax-y', `${viewportProgress * 18 * mobileStrength}px`);
         image.style.setProperty('--image-parallax-scale', `${1.045 + Math.abs(viewportProgress) * 0.012 * mobileStrength}`);
       });
@@ -92,7 +100,7 @@ export default function ScrollReveal() {
       const elements = root instanceof HTMLElement && root.matches(selector)
         ? [root, ...root.querySelectorAll<HTMLElement>(selector)]
         : [...root.querySelectorAll<HTMLElement>(selector)];
-      elements.forEach((element, index) => {
+      elements.forEach(element => {
         if (element.classList.contains('reveal-ready')) return;
         element.classList.add('reveal-ready');
         if (element.matches(cardSelector)) element.classList.add('reveal-card');
@@ -101,14 +109,20 @@ export default function ScrollReveal() {
           ? [...element.parentElement.children].filter(child => child.matches(selector))
           : [];
         const siblingIndex = Math.max(0, siblings.indexOf(element));
-        const staggerIndex = siblings.length > 1 ? siblingIndex : index;
-        element.style.setProperty('--reveal-delay', `${Math.min(staggerIndex % 4, 3) * 100}ms`);
+        const staggerIndex = siblings.length > 1 ? siblingIndex : 0;
+        element.style.setProperty('--reveal-delay', `${Math.min(staggerIndex, 5) * 85}ms`);
       });
 
       const images = root instanceof HTMLElement && root.matches('.launch-category img, .detail-photos img, .card-image-media')
         ? [root, ...root.querySelectorAll<HTMLElement>('.launch-category img, .detail-photos img, .card-image-media')]
         : [...root.querySelectorAll<HTMLElement>('.launch-category img, .detail-photos img, .card-image-media')];
-      images.forEach(image => image.classList.add('cinematic-image'));
+      images.forEach(image => {
+        image.classList.add('cinematic-image');
+        if (!image.classList.contains('reveal-ready')) {
+          image.classList.add('reveal-ready', 'reveal-image');
+          image.style.setProperty('--reveal-delay', '80ms');
+        }
+      });
       queueReveal();
     };
 
