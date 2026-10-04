@@ -18,7 +18,9 @@ try:
             query += ('&' if query else '') + 'sslmode=require'
         normalized = url._replace(scheme='postgresql+psycopg', query=query).geturl()
         env_path = root / 'backend/.env'
-        content = env_path.read_text(encoding='utf-8')
+        # Windows editors may save dotenv files with a UTF-8 BOM. Strip it so
+        # an anchored match can still find DATABASE_URL on the first line.
+        content = env_path.read_text(encoding='utf-8-sig')
         content, count = re.subn(r'^DATABASE_URL=.*$', lambda _: 'DATABASE_URL=' + normalized, content, flags=re.M)
         if count != 1:
             print('Expected one DATABASE_URL entry; no changes made.'); sys.exit(1)
@@ -45,8 +47,20 @@ try:
 except Exception as exc:
     message = str(exc).lower()
     reason = ('authentication failed' if 'password authentication failed' in message else
+              'pooler tenant or username was not recognized' if 'tenant or user not found' in message else
+              'database name was not recognized' if 'database' in message and 'does not exist' in message else
               'host could not be resolved' if 'resolve' in message or 'getaddrinfo' in message else
+              'network route is unavailable' if 'network is unreachable' in message else
+              'connection was refused' if 'connection refused' in message else
               'connection timed out' if 'timeout' in message or 'timed out' in message else
               'TLS configuration failed' if 'ssl' in message else 'connection/configuration error')
     print(f'Database connection: failed ({reason}; {type(exc).__name__}). Credentials omitted.')
+    if '--diagnose' in sys.argv:
+        detail = str(exc)
+        for secret in (getattr(url, 'hostname', None), getattr(url, 'username', None),
+                       getattr(url, 'password', None), cfg.database_url):
+            if secret:
+                detail = detail.replace(secret, '[redacted]')
+        detail = re.sub(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', '[redacted-ip]', detail)
+        print('Sanitized detail:', detail)
     sys.exit(1)

@@ -360,6 +360,57 @@ def test_supabase_google_login_rejects_unknown_email(context, monkeypatch):
     assert 'No CelebrateCG account exists' in result.json()['detail']
 
 
+def test_supabase_google_signup_creates_verified_customer(context, monkeypatch):
+    api_main.settings().supabase_url = 'https://celebratecg-test.supabase.co'
+    api_main.settings().supabase_publishable_key = 'publishable-test-key'
+
+    class FakeResponse:
+        status_code = 200
+        def json(self):
+            return {
+                'email': 'new.google@example.com',
+                'email_confirmed_at': '2026-09-30T00:00:00Z',
+                'user_metadata': {'full_name': 'New Google User'},
+            }
+
+    monkeypatch.setattr(api_main.httpx, 'get', lambda *args, **kwargs: FakeResponse())
+    result = context['client'].post('/api/auth/supabase', json={
+        'access_token': 'valid-google-access-token',
+        'role': 'customer',
+        'signup': True,
+    })
+    assert result.status_code == 200, result.text
+    assert result.json()['name'] == 'New Google User'
+    assert result.json()['role'] == 'customer'
+    assert result.json()['approval_status'] == 'approved'
+    assert context['client'].get('/api/auth/me').status_code == 200
+    with context['sessions']() as db:
+        user = db.scalar(select(User).where(User.email == 'new.google@example.com'))
+        assert user is not None
+        assert user.is_email_verified is True
+        assert user.password_hash
+
+
+def test_supabase_google_signup_creates_pending_vendor(context, monkeypatch):
+    api_main.settings().supabase_url = 'https://celebratecg-test.supabase.co'
+    api_main.settings().supabase_publishable_key = 'publishable-test-key'
+
+    class FakeResponse:
+        status_code = 200
+        def json(self):
+            return {'email': 'new.vendor@example.com', 'user_metadata': {'name': 'New Vendor'}}
+
+    monkeypatch.setattr(api_main.httpx, 'get', lambda *args, **kwargs: FakeResponse())
+    result = context['client'].post('/api/auth/supabase', json={
+        'access_token': 'valid-google-access-token',
+        'role': 'vendor',
+        'signup': True,
+    })
+    assert result.status_code == 200, result.text
+    assert result.json()['role'] == 'vendor'
+    assert result.json()['approval_status'] == 'pending'
+
+
 def test_supabase_google_login_requires_configuration(context):
     api_main.settings().supabase_url = ''
     api_main.settings().supabase_publishable_key = ''

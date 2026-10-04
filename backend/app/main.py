@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 import hashlib
 import hmac
 import json
+import secrets
 import time
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
@@ -247,7 +248,24 @@ def supabase_login(data: SupabaseLogin, response: Response, db: Session = Depend
         name = email.split('@')[0][:150] or 'CelebrateCG user'
     user = db.scalar(select(User).where(User.email == email))
     if not user:
-        raise HTTPException(403, 'No CelebrateCG account exists for this Google email. Please create an account first.')
+        if not data.signup:
+            raise HTTPException(403, 'No CelebrateCG account exists for this Google email. Please create an account first.')
+        user = User(
+            name=name,
+            email=email,
+            password_hash=passwords.hash(secrets.token_urlsafe(32)),
+            role=data.role,
+            approval_status='pending' if data.role == 'vendor' else 'approved',
+            is_email_verified=bool(profile.get('email_confirmed_at')),
+        )
+        db.add(user)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            user = db.scalar(select(User).where(User.email == email))
+            if not user:
+                raise
     changed = False
     if not user.is_email_verified and profile.get('email_confirmed_at'):
         user.is_email_verified = True

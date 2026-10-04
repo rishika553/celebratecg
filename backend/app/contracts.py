@@ -23,6 +23,7 @@ class Signup(Login):
 class SupabaseLogin(Input):
     access_token: str = Field(min_length=20, max_length=10000)
     role: Literal['customer', 'vendor'] = 'customer'
+    signup: bool = False
 
 
 class VenueInput(Input):

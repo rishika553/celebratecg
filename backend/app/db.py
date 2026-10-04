@@ -15,7 +15,12 @@ if not test_sqlite and not url.startswith('postgresql+psycopg://'):
 engine = create_engine(
     url, pool_pre_ping=True,
     connect_args={'check_same_thread': False, 'timeout': 20} if test_sqlite else {'connect_timeout': 10},
-    **({} if test_sqlite else {'pool_size': 5, 'max_overflow': 5, 'pool_timeout': 10, 'pool_recycle': 300}),
+    **({} if test_sqlite else {
+        'pool_size': cfg.database_pool_size,
+        'max_overflow': cfg.database_max_overflow,
+        'pool_timeout': 10,
+        'pool_recycle': 300,
+    }),
 )
 if test_sqlite:
     @event.listens_for(engine, 'connect')

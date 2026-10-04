@@ -13,6 +13,13 @@ if (!['http:', 'https:'].includes(backend.protocol) || backend.username || backe
 
 const config: NextConfig = {
   poweredByHeader: false,
+  async redirects() {
+    return [
+      { source: '/customer', destination: '/login', permanent: true },
+      { source: '/vendor', destination: '/login', permanent: true },
+      { source: '/services', destination: '/#services', permanent: true },
+    ];
+  },
   async rewrites() {
     return [{ source: '/api/:path*', destination: `${backend.origin}/api/:path*` }];
   },

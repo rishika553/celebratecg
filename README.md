@@ -44,6 +44,8 @@ Open two terminals from the project root:
 
 Visit http://127.0.0.1:3000. API documentation: http://127.0.0.1:8000/docs.
 
+Customers and vendors sign in through the shared `/login` page and use the same dashboard, which displays features for their account role. Registration at `/signup` still lets people choose a customer or vendor account. Existing `/customer` and `/vendor` bookmarks redirect to `/login`. The separate `/admin` entry remains restricted to administrators, who must be provisioned explicitly with `python -m app.bootstrap --admin-email your-admin@example.com`; this does not create demo data.
+
 Use the same hostname consistently during a session because cookies are host-specific.
 
 Optional demo accounts after running setup with `-SeedDemoData` (password for each: `CelebrateDemo123!`):

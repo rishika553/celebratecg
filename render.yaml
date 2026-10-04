@@ -20,6 +20,10 @@ services:
         value: "false"
       - key: DATABASE_URL
         sync: false
+      - key: DATABASE_POOL_SIZE
+        value: "2"
+      - key: DATABASE_MAX_OVERFLOW
+        value: "1"
       - key: JWT_SECRET
         generateValue: true
       - key: ALLOWED_ORIGINS
