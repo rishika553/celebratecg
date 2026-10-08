@@ -95,7 +95,7 @@ export default function AuthForm({ signup = false, adminOnly = false }: Props) {
           <fieldset className="role-picker"><legend>I’m here to</legend><button type="button" className={role === 'customer' ? 'active' : ''} onClick={() => setRole('customer')}>Plan a celebration</button><button type="button" className={role === 'vendor' ? 'active' : ''} onClick={() => setRole('vendor')}>List my space</button></fieldset>
         </>}
         <label>Email address<input name="email" type="email" autoComplete="email" required placeholder="you@example.com" /></label>
-        <label>Password<input name="password" type="password" autoComplete={signup ? 'new-password' : 'current-password'} minLength={signup ? 10 : 1} maxLength={128} required placeholder={signup ? 'At least 10 characters' : 'Your password'} /></label>
+        <label>Password<input name="password" type="password" autoComplete={signup ? 'new-password' : 'current-password'} minLength={signup ? 10 : 8} maxLength={128} required placeholder={signup ? 'At least 10 characters' : 'At least 8 characters'} /></label>
         {signup && role === 'vendor' && <p className="form-note">Our team reviews host accounts before you can add a venue.</p>}
         {error && <p className="error-message" role="alert">{error}</p>}
         <button className="button button-primary full" disabled={busy || googleBusy}>{busy ? 'Just a moment…' : signup ? 'Create account' : 'Sign in'}<ArrowRight size={17} /></button>

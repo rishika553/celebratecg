@@ -7,6 +7,7 @@ import '@fontsource-variable/dm-sans';
 import './globals.css';
 import './theme.css';
 import './content.css';
+import './brand-theme.css';
 import SiteFooter from '@/components/site-footer';
 import ScrollReveal from '@/components/scroll-reveal';
 export const metadata: Metadata = {

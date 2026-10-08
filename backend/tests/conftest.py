@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from app.auth import passwords
 from app.db import Base, get_db
 from app.main import app, login_attempts
-from app.models import Category, User, Venue
+from app.models import Category, User, Venue, VenueCategory
 from app.storage import objects
 
 
@@ -37,6 +37,8 @@ def context(tmp_path):
         db.flush()
         venue = Venue(vendor_id=users['vendor'], category_id=category.id, name='Test Garden', description='A beautiful test venue for celebrations.', location_text='Raipur', price_per_day=45000, max_guests=100, facilities=['Parking'], approval_status='approved')
         db.add(venue)
+        db.flush()
+        db.add(VenueCategory(venue_id=venue.id, category_id=category.id))
         db.commit()
         venue_id, category_id = venue.id, category.id
     def override():

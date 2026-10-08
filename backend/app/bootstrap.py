@@ -5,7 +5,7 @@ from sqlalchemy import select
 from .auth import passwords
 from .config import settings
 from .db import SessionLocal
-from .models import Category, User, Venue, VenuePhoto
+from .models import Category, User, Venue, VenueCategory, VenuePhoto
 
 PHOTOS = [
     # Unique venue-style references for local demo cards.
@@ -117,6 +117,7 @@ def main():
                           cancellation_policy='Unpaid reservations can be cancelled immediately. Paid cancellations require support review; no automatic refund is promised in this preview.', approval_status='approved')
             db.add(venue)
             db.flush()
+            db.add(VenueCategory(venue_id=venue.id, category_id=category.id))
             db.add(VenuePhoto(venue_id=venue.id, url=PHOTOS[i]))
         db.commit()
     print('Local demo ready. Accounts: customer@example.com, vendor@example.com, admin@example.com. Password: CelebrateDemo123!')

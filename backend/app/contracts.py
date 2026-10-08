@@ -11,7 +11,7 @@ class Input(BaseModel):
 
 class Login(Input):
     email: EmailStr
-    password: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class Signup(Login):
@@ -27,7 +27,8 @@ class SupabaseLogin(Input):
 
 
 class VenueInput(Input):
-    category_id: UUID
+    category_ids: list[UUID] = Field(default_factory=list, max_length=8)
+    category_id: UUID | None = None
     name: str = Field(min_length=3, max_length=200)
     description: str = Field(min_length=20, max_length=10000)
     location_text: str = Field(min_length=2, max_length=255)
@@ -37,6 +38,17 @@ class VenueInput(Input):
     rules: str = Field(default='', max_length=3000)
     cancellation_policy: str = Field(default='Contact the venue for cancellation terms. Paid cancellations require admin review.', max_length=3000)
     photo_url: str = Field(default='', max_length=2000)
+
+    @model_validator(mode='after')
+    def valid_categories(self):
+        if not self.category_ids and self.category_id:
+            self.category_ids = [self.category_id]
+        if not self.category_ids:
+            raise ValueError('Choose at least one venue category.')
+        if len(set(self.category_ids)) != len(self.category_ids):
+            raise ValueError('Choose each venue category only once.')
+        self.category_id = self.category_ids[0]
+        return self
 
     @field_validator('photo_url')
     @classmethod

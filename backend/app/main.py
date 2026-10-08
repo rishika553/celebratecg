@@ -12,14 +12,14 @@ from zoneinfo import ZoneInfo
 import httpx
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
-from sqlalchemy import func, or_, select, update, text
+from sqlalchemy import delete, func, or_, select, update, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from .auth import current_user, dummy_hash, passwords, role, set_session, user_view
 from .config import settings
 from .contracts import ApprovalInput, AvailabilityInput, BookingInput, Login, OfferInput, OfferValidationInput, PhotoOrderInput, Signup, SupabaseLogin, VenueInput, VerifyPayment
 from .db import get_db
-from .models import Availability, Booking, Category, Offer, Payment, User, Venue, VenuePhoto, now
+from .models import Availability, Booking, Category, Offer, Payment, User, Venue, VenueCategory, VenuePhoto, now
 from .storage import objects
 from .reservations import expire_holds
 
@@ -61,10 +61,19 @@ def business_today():
 
 def venue_view(db, venue):
     photos = db.scalars(select(VenuePhoto).where(VenuePhoto.venue_id == venue.id).order_by(VenuePhoto.sort_order)).all()
+    selected_categories = list(db.scalars(
+        select(Category).join(VenueCategory, VenueCategory.category_id == Category.id)
+        .where(VenueCategory.venue_id == venue.id)
+    ))
     category = db.get(Category, venue.category_id)
+    if not selected_categories:
+        selected_categories = [category]
+    selected_categories.sort(key=lambda item: (item.id != venue.category_id, item.name))
     return {'id': venue.id, 'name': venue.name, 'description': venue.description, 'location_text': venue.location_text,
             'price_per_day': str(venue.price_per_day), 'max_guests': venue.max_guests, 'facilities': venue.facilities,
             'category': category.name, 'category_id': venue.category_id, 'category_slug': category.slug,
+            'categories': [{'id': item.id, 'name': item.name, 'slug': item.slug, 'type': item.type} for item in selected_categories],
+            'category_ids': [item.id for item in selected_categories],
             'photos': [photo_url(photo) for photo in photos],
             'photo_items': [{'id': photo.id, 'url': photo_url(photo), 'sort_order': photo.sort_order} for photo in photos],
             'rules': venue.rules, 'cancellation_policy': venue.cancellation_policy,
@@ -97,8 +106,14 @@ def public_venue(db, venue_id):
     if not venue or venue.approval_status != 'approved' or not venue.is_active:
         raise HTTPException(404, 'Venue not found.')
     vendor = db.get(User, venue.vendor_id)
-    category = db.get(Category, venue.category_id)
-    if vendor.approval_status != 'approved' or not category.is_active:
+    has_active_category = db.scalar(
+        select(VenueCategory.venue_id).join(Category, VenueCategory.category_id == Category.id)
+        .where(VenueCategory.venue_id == venue.id, Category.is_active.is_(True)).limit(1)
+    )
+    if not has_active_category:
+        category = db.get(Category, venue.category_id)
+        has_active_category = category and category.is_active
+    if vendor.approval_status != 'approved' or not has_active_category:
         raise HTTPException(404, 'Venue not found.')
     return venue
 
@@ -303,9 +318,11 @@ def categories(kind: str = Query('venue', pattern='^(venue|service|all)$'), db: 
 
 @app.get('/api/cities')
 def cities(db: Session = Depends(get_db)):
-    query = (select(Venue).join(Category).join(User, Venue.vendor_id == User.id)
+    active_category_venues = (select(VenueCategory.venue_id).join(Category, VenueCategory.category_id == Category.id)
+                              .where(Category.is_active.is_(True)))
+    query = (select(Venue).join(User, Venue.vendor_id == User.id)
              .where(Venue.approval_status == 'approved', Venue.is_active.is_(True),
-                    Category.is_active.is_(True), User.approval_status == 'approved'))
+                    Venue.id.in_(active_category_venues), User.approval_status == 'approved'))
     grouped = {}
     for venue in db.scalars(query.order_by(Venue.location_text, Venue.created_at)):
         city = venue.location_text.split(',')[0].strip()
@@ -325,13 +342,17 @@ def venues(q: str = '', city: str = '', category: str = '', guests: int = Query(
            min_price: Decimal | None = Query(None, ge=0), max_price: Decimal | None = Query(None, gt=0),
            facility: list[str] = Query(default=[]), booking_date: date | None = None,
            db: Session = Depends(get_db)):
-    query = select(Venue).join(Category).join(User, Venue.vendor_id == User.id).where(Venue.approval_status == 'approved', Venue.is_active.is_(True), Category.is_active.is_(True), User.approval_status == 'approved')
+    active_category_venues = (select(VenueCategory.venue_id).join(Category, VenueCategory.category_id == Category.id)
+                              .where(Category.is_active.is_(True)))
+    query = select(Venue).join(User, Venue.vendor_id == User.id).where(Venue.approval_status == 'approved', Venue.is_active.is_(True), Venue.id.in_(active_category_venues), User.approval_status == 'approved')
     if q:
         query = query.where(or_(Venue.name.icontains(q, autoescape=True), Venue.location_text.icontains(q, autoescape=True)))
     if city:
         query = query.where(Venue.location_text.icontains(city, autoescape=True))
     if category:
-        query = query.where(Category.slug == category)
+        matching_category_venues = (select(VenueCategory.venue_id).join(Category, VenueCategory.category_id == Category.id)
+                                    .where(Category.slug == category, Category.is_active.is_(True)))
+        query = query.where(Venue.id.in_(matching_category_venues))
     if guests:
         query = query.where(Venue.max_guests >= guests)
     if min_price is not None:
@@ -432,14 +453,19 @@ def vendor_venues(user: User = Depends(role('vendor')), db: Session = Depends(ge
 
 
 def apply_venue(db, data, venue):
-    category = db.get(Category, str(data.category_id))
-    if not category or category.type != 'venue' or not category.is_active:
-        raise HTTPException(422, 'Choose an active venue category.')
-    for key, value in data.model_dump(exclude={'photo_url'}).items():
-        setattr(venue, key, str(value) if key == 'category_id' else value)
+    category_ids = [str(category_id) for category_id in data.category_ids]
+    categories = list(db.scalars(select(Category).where(Category.id.in_(category_ids))))
+    if len(categories) != len(category_ids) or any(category.type != 'venue' or not category.is_active for category in categories):
+        raise HTTPException(422, 'Choose only active venue categories.')
+    for key, value in data.model_dump(exclude={'photo_url', 'category_id', 'category_ids'}).items():
+        setattr(venue, key, value)
+    venue.category_id = category_ids[0]
     venue.approval_status = 'pending'
     db.add(venue)
     db.flush()
+    db.execute(delete(VenueCategory).where(VenueCategory.venue_id == venue.id))
+    for category_id in category_ids:
+        db.add(VenueCategory(venue_id=venue.id, category_id=category_id))
     if data.photo_url:
         for photo in db.scalars(select(VenuePhoto).where(VenuePhoto.venue_id == venue.id)):
             db.delete(photo)

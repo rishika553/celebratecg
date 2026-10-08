@@ -63,6 +63,12 @@ class Venue(Base):
     __table_args__ = (CheckConstraint('price_per_day > 0'), CheckConstraint('max_guests > 0'))
 
 
+class VenueCategory(Base):
+    __tablename__ = 'venue_categories'
+    venue_id: Mapped[str] = mapped_column(ForeignKey('venues.id', ondelete='CASCADE'), primary_key=True)
+    category_id: Mapped[str] = mapped_column(ForeignKey('categories.id'), primary_key=True)
+
+
 class VenuePhoto(Base):
     __tablename__ = 'venue_photos'
     id: Mapped[str] = mapped_column(Uuid(as_uuid=False), primary_key=True, default=uid)

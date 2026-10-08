@@ -6,7 +6,7 @@ import { ArrowUpRight, CalendarDays, Map, MapPin, Search, Users } from 'lucide-r
 import LocationMap from './location-map';
 import VenueBookingCard from './venue-booking-card';
 import { api, Category, CitySummary, money, today, Venue } from '@/lib/api';
-import { categories as venueVisuals } from '@/lib/site-content';
+import { categories as venueVisuals, cities as siteCities } from '@/lib/site-content';
 
 type SearchOverrides = { city?: string; category?: string };
 
@@ -96,7 +96,7 @@ export default function CitiesExplorer() {
     <section id="venue-map" className="section venue-map-section">
       <div className="categories-intro"><div><span className="eyebrow">FIND VENUES AROUND YOU</span><h2>Explore properties on the map.</h2></div><p>Filter the live catalogue by destination, date, group size, price and type of space.</p></div>
       <form className="destination-filters" onSubmit={submit}>
-        <label><span>Location</span><select value={city} onChange={event => setCity(event.target.value)}><option value="">All destinations</option>{cities.map(item => <option value={item.name} key={item.name}>{item.name}</option>)}</select></label>
+        <label><span>Location</span><select value={city} onChange={event => setCity(event.target.value)}><option value="">All destinations</option>{siteCities.map(name => <option value={name} key={name}>{name}</option>)}</select></label>
         <label><span>Category</span><select value={category} onChange={event => setCategory(event.target.value)}><option value="">All spaces</option>{categories.map(item => <option value={item.slug} key={item.id}>{item.name}</option>)}</select></label>
         <label><span><CalendarDays size={14} /> Date</span><input type="date" min={today()} value={date} onChange={event => setDate(event.target.value)} /></label>
         <label><span><Users size={14} /> Guests</span><input type="number" min="1" placeholder="Any group size" value={guests} onChange={event => setGuests(event.target.value)} /></label>

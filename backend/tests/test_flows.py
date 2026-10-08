@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 import app.main as api_main
 from sqlalchemy import select
 from app.main import app
-from app.models import Booking, Offer, Payment, User, Venue, now
+from app.models import Booking, Category, Offer, Payment, User, Venue, VenueCategory, now
 from conftest import login
 
 
@@ -199,6 +199,42 @@ def test_vendor_admin_customer_approval_loop(context):
     assert client.post(f'/api/admin/venues/{venue_id}/approval', json={'status': 'approved'}).status_code == 200
     login(client)
     assert client.post('/api/bookings', json=payload(context, venue_id=venue_id)).status_code == 201
+
+
+def test_vendor_can_assign_and_filter_multiple_categories(context):
+    client = context['client']
+    with context['sessions']() as db:
+        resort = Category(name='Resorts', slug='resort', type='venue')
+        db.add(resort)
+        db.commit()
+        resort_id = resort.id
+
+    login(client, 'vendor')
+    body = {
+        'category_ids': [context['category_id'], resort_id],
+        'name': 'Garden Resort',
+        'description': 'A flexible garden and resort venue for celebrations.',
+        'location_text': 'Raipur',
+        'price_per_day': 25000,
+        'max_guests': 80,
+    }
+    created = client.post('/api/vendor/venues', json=body)
+    assert created.status_code == 201, created.text
+    venue = created.json()
+    assert venue['category_ids'] == [context['category_id'], resort_id]
+    assert [category['slug'] for category in venue['categories']] == ['lawn', 'resort']
+
+    missing = client.post('/api/vendor/venues', json={**body, 'category_ids': []})
+    assert missing.status_code == 422
+
+    login(client, 'admin')
+    assert client.post(f'/api/admin/venues/{venue["id"]}/approval', json={'status': 'approved'}).status_code == 200
+    by_primary = client.get('/api/venues?category=lawn').json()
+    by_secondary = client.get('/api/venues?category=resort').json()
+    assert venue['id'] in {item['id'] for item in by_primary}
+    assert [item['id'] for item in by_secondary] == [venue['id']]
+    with context['sessions']() as db:
+        assert len(db.scalars(select(VenueCategory).where(VenueCategory.venue_id == venue['id'])).all()) == 2
 
 
 def test_vendor_photo_upload_order_remove_and_reapproval(context):

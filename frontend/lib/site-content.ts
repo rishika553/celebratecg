@@ -2,8 +2,8 @@
 // Launch benefits describe the published programme, not completed booking features.
 export const site = {
   signup: '/signup',
-  phone: '+91 98930 47100',
-  whatsapp: 'https://wa.me/919893047100',
+  phone: '+91 92034 60344',
+  whatsapp: 'https://wa.me/919203460344',
   email: 'bookings@celebrategc.com',
   headquarters: 'Raipur, Chhattisgarh, India',
   launch: 'New Year’s Eve 2026',

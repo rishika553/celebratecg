@@ -41,7 +41,7 @@ export default function HomePage() {
   const [eventType, setEventType] = useState('');
   const [date, setDate] = useState('');
   const [guests, setGuests] = useState('');
-  const [cityOptions, setCityOptions] = useState(launchCities);
+  const cityOptions = launchCities;
   const [categoryOptions, setCategoryOptions] = useState(launchCategories.map(({ slug, name }) => ({ slug, name })));
   const [marketplaceStats, setMarketplaceStats] = useState<MarketplaceStats | null>(null);
   const [marketplaceLoading, setMarketplaceLoading] = useState(true);
@@ -67,9 +67,7 @@ export default function HomePage() {
   useEffect(() => {
     Promise.all([api<Venue[]>('/venues'), api<CitySummary[]>('/cities'), api<Category[]>('/categories')])
       .then(([venues, cityData, categoryData]) => {
-        const liveCities = cityData.map(item => item.name).filter(Boolean);
         const venueCategories = categoryData.filter(item => item.type === 'venue');
-        if (liveCities.length) setCityOptions(liveCities);
         if (venueCategories.length) setCategoryOptions(venueCategories.map(({ slug, name }) => ({ slug, name })));
         const services = categoryData.filter(item => item.type === 'service').length;
         if (venues.length || cityData.length || services) setMarketplaceStats({ venues: venues.length, cities: cityData.length, services });

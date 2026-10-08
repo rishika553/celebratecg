@@ -239,6 +239,16 @@ html, body { overflow-x: clip; }
 .booking-now-summary > p:last-child { display: flex; align-items: center; gap: 7px; margin-bottom: 18px; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
 .booking-now-card form label { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
 .booking-now-card form label input { flex-basis: 100%; }
+.booking-dates-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: var(--ink); }
+.booking-date-range { display: flex; align-items: center; gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+.booking-date-range input { flex: 1; border: none; padding: 9px 8px; font-size: 13px; background: #fff; min-width: 0; }
+.date-separator { padding: 0 6px; color: var(--muted); font-size: 12px; flex-shrink: 0; }
+.guest-counter { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 10px; }
+.guest-btn { display: grid; place-items: center; width: 36px; height: 36px; background: var(--paper); border: none; cursor: pointer; color: var(--ink); transition: background 120ms; flex-shrink: 0; }
+.guest-btn:hover:not(:disabled) { background: var(--line); }
+.guest-btn:disabled { opacity: .35; cursor: default; }
+.guest-input { flex: 1; border: none; border-left: 1px solid var(--line); border-right: 1px solid var(--line); text-align: center; font-size: 14px; font-weight: 600; padding: 6px 4px; background: #fff; -moz-appearance: textfield; appearance: textfield; }
+.guest-input::-webkit-inner-spin-button, .guest-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .booking-note { display: flex; align-items: flex-start; justify-content: center; gap: 7px; }
 .map-venue-price button { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); font-size: 11px; text-decoration: underline; text-underline-offset: 4px; }
 .map-venue-price button:hover { color: #963819; }
@@ -323,6 +333,14 @@ html, body { overflow-x: clip; }
 }
 .venue-form input[type="file"] { padding: 10px; background: var(--cream); }
 .venue-form label small { display: block; color: var(--muted); margin: -12px 0 18px; font-size: 10px; }
+.category-picker { min-width: 0; margin: 0 0 18px; padding: 0; border: 0; }
+.category-picker legend { font-size: 12px; font-weight: 500; }
+.category-picker > small { display: block; margin: 2px 0 8px; color: var(--muted); font-size: 10px; font-weight: 400; }
+.category-picker > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; padding: 11px; border: 1px solid #BCA99C; border-radius: 5px; background: #FFFFFF; }
+.category-picker label { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 5px 6px; border-radius: 4px; font-size: 11px; font-weight: 400; cursor: pointer; }
+.category-picker label:hover { background: var(--peach); }
+.category-picker input { width: 16px; height: 16px; flex: 0 0 auto; margin: 0; accent-color: var(--accent); }
+.category-picker span { overflow: hidden; text-overflow: ellipsis; }
 .photo-manager { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 16px 0; }
 .photo-manager > div { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--cream); }
 .photo-manager img { display: block; width: 100%; height: 85px; object-fit: cover; }
@@ -727,12 +745,31 @@ body:has(.cities-page) .header { position: relative; z-index: 50; margin-bottom:
 .map-venue-row { border-bottom: 1px solid var(--line); transition: background 180ms ease; }
 .map-venue-row.active { background: var(--peach); }
 .map-venue-select { display: grid; grid-template-columns: 112px minmax(0,1fr); width: 100%; gap: 15px; padding: 16px 18px 10px; text-align: left; }
+/* Venue list rows — structured grid so price row aligns under copy, not photo */
+.map-venue-row { border-bottom: 1px solid var(--line); transition: background 180ms ease; }
+.map-venue-row.active { background: var(--peach); }
+.map-venue-select {
+  display: grid;
+  /* photo | copy */
+  grid-template-columns: 112px minmax(0, 1fr);
+  width: 100%;
+  gap: 15px;
+  padding: 16px 18px 0;
+  text-align: left;
+}
 .map-venue-photo { min-height: 104px; border-radius: 8px; background: #E8D8CC center/cover no-repeat; }
 .map-venue-copy { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; }
 .map-venue-copy small { color: var(--accent); font-size: 9px; font-weight: 650; letter-spacing: .9px; text-transform: uppercase; }
 .map-venue-copy strong { margin: 4px 0 8px; font: 400 25px/1.08 var(--serif); }
 .map-venue-copy > span { display: flex; align-items: center; gap: 5px; margin-top: 3px; color: var(--muted); font-size: 10px; }
-.map-venue-price { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 18px 15px 145px; }
+/* Price row: indented to align under the copy column (photo=112 + gap=15 + left-pad=18 = 145) */
+.map-venue-price {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 18px 14px calc(112px + 15px + 18px);
+}
 .map-venue-price > span { color: var(--muted); font-size: 10px; }
 .map-venue-price strong { color: var(--ink); font-size: 14px; }
 .map-venue-price a { color: var(--accent); font-size: 11px; text-decoration: underline; text-underline-offset: 4px; }
@@ -743,40 +780,31 @@ body:has(.cities-page) .header { position: relative; z-index: 50; margin-bottom:
 .cities-page-loading { min-height: 70svh; display: grid; place-items: center; color: var(--muted); }
 @media(max-width:900px) {
   body:has(.cities-page) .header { margin-bottom: -74px; }
-  .cities-hero-copy { padding-left: 44px; padding-right: 44px; }
-  .destination-filters { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .venue-map-layout { grid-template-columns: minmax(310px,.9fr) minmax(0,1.1fr); }
+  .cities-hero-copy { padding-left: 32px; padding-right: 32px; }
+  /* destination-filters, venue-map-layout, mobile-map-toggle handled by brand-theme.css */
 }
 @media(max-width:760px) {
   body:has(.cities-page) .header { margin-bottom: -70px; }
   .cities-hero { width: calc(100% - 8px); min-height: max(620px,calc(100svh - 12px)); margin: 6px 0 6px 8px; border-radius: 14px; }
-  .cities-hero-copy { padding: 82px 24px 100px; }
+  .cities-hero-copy { padding: 80px 22px 96px; }
   .cities-hero-copy h1 { font-size: clamp(50px,14vw,66px); }
   .cities-hero-copy > p { font-size: 15px; }
-  .city-hero-search { grid-template-columns: minmax(0,1fr) 50px; }
-  .destinations-section, .venue-map-section { padding-top: 64px; padding-bottom: 64px; }
-  .destination-grid { grid-template-columns: 1fr; grid-auto-rows: auto; gap: 14px; }
-  .destination-card, .destination-card:first-child { grid-column: 1; grid-row: auto; min-height: 340px; }
-  .destination-filters { grid-template-columns: 1fr; padding: 17px; }
-  .mobile-map-toggle { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 12px; padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: #FFFFFF; }
-  .mobile-map-toggle button { min-height: 42px; border-radius: 6px; }
-  .mobile-map-toggle button.active { background: var(--charcoal); color: #FFFFFF; }
-  .venue-map-layout { display: block; min-height: 0; }
-  .map-venue-list { max-height: none; border-right: 0; }
-  .destination-map-panel { min-height: 450px; }
-  .destination-map-panel .location-map iframe { height: 375px; }
-  .mobile-view-list .destination-map-panel, .mobile-view-map .map-venue-list { display: none; }
-  .map-venue-select { grid-template-columns: 100px minmax(0,1fr); }
-  .map-venue-price { padding-left: 133px; }
+  /* city-hero-search: brand-theme.css forces flex; just ensure font size here */
+  .city-hero-search input { font-size: 16px !important; }
+  .destinations-section, .venue-map-section { padding-top: 52px; padding-bottom: 52px; }
+  /* map-venue-select: smaller photo column at 760px */
+  .map-venue-select { grid-template-columns: 96px minmax(0,1fr); padding: 14px 16px 0; }
+  .map-venue-photo { min-height: 96px; }
+  /* price padding: 96px photo + 15px gap + 16px left-pad = 127px */
+  .map-venue-price { padding: 6px 16px 13px calc(96px + 15px + 16px); }
 }
 @media(max-width:430px) {
   .cities-hero-copy h1 { font-size: 49px; }
-  .city-hero-search input { font-size: 16px; }
-  .destination-card, .destination-card:first-child { min-height: 310px; }
-  .map-venue-select { grid-template-columns: 82px minmax(0,1fr); padding-left: 13px; padding-right: 13px; }
-  .map-venue-photo { min-height: 92px; }
-  .map-venue-copy strong { font-size: 22px; }
-  .map-venue-price { padding-left: 110px; padding-right: 13px; }
+  .map-venue-select { grid-template-columns: 78px minmax(0,1fr); padding: 12px 13px 0; }
+  .map-venue-photo { min-height: 88px; }
+  .map-venue-copy strong { font-size: 20px; }
+  /* price padding: 78px photo + 15px gap + 13px left-pad = 106px */
+  .map-venue-price { padding: 6px 13px 13px calc(78px + 15px + 13px); }
 }
 @media(prefers-reduced-motion:reduce) { .destination-card:hover > img { transform: none; } }
 

@@ -9,7 +9,10 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
   return <header className={`header ${menuOpen ? 'menu-open' : ''}`}>
-    <Link href="/" className="brand" onClick={closeMenu}><span className="brand-icon"><CelebrationMark size={28} /></span>celebrate<span className="brand-cg">cg</span><span className="brand-dot">.</span></Link>
+    <Link href="/" className="brand" onClick={closeMenu}>
+      <img src="/celebratecg-logo.jpg" alt="CelebrateCG" className="brand-logo-img" />
+      <span>celebrate<span className="brand-cg">cg</span><span className="brand-dot">.</span></span>
+    </Link>
     <nav className="main-nav" aria-label="Main navigation">
       <Link href="/" onClick={closeMenu}>Home</Link>
       <Link href="/find-venue" onClick={closeMenu}>Find a venue</Link>
