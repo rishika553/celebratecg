@@ -1,6 +1,5 @@
 'use client';
 import Link from 'next/link';
-import CelebrationMark from '@/components/celebration-mark';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useSession } from './session';
@@ -9,8 +8,8 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
   return <header className={`header ${menuOpen ? 'menu-open' : ''}`}>
-    <Link href="/" className="brand" onClick={closeMenu}>
-      <img src="/celebratecg-logo.jpg" alt="CelebrateCG" className="brand-logo-img" />
+    <Link href="/" className="brand" onClick={closeMenu} aria-label="CelebrateCG">
+      <img src="/celebratecg-logo.jpg" alt="" className="brand-logo-img" />
       <span>celebrate<span className="brand-cg">cg</span><span className="brand-dot">.</span></span>
     </Link>
     <nav className="main-nav" aria-label="Main navigation">
@@ -20,9 +19,8 @@ export default function Header() {
       <Link href="/#services" onClick={closeMenu}>Services</Link>
       <Link href="/cities" onClick={closeMenu}>Cities &amp; map</Link>
       <Link href="/contact" onClick={closeMenu}>Contact</Link>
+      <Link href={user ? '/dashboard' : '/login'} className="mobile-nav-link mobile-nav-account" onClick={closeMenu}>{user ? 'My dashboard' : 'Sign in'} <ArrowUpRight size={15} /></Link>
       <Link href={user?.role === 'vendor' ? '/dashboard' : '/signup?role=vendor'} className="mobile-nav-link" onClick={closeMenu}>List your space <ArrowUpRight size={15} /></Link>
-      <Link href="/terms" className="mobile-nav-link" onClick={closeMenu}>Terms &amp; Conditions</Link>
-      <Link href="/privacy" className="mobile-nav-link" onClick={closeMenu}>Privacy Policy</Link>
     </nav>
     <div className="header-actions">
       <Link className="host-link" href={user?.role === 'vendor' ? '/dashboard' : '/signup?role=vendor'}>List your space <ArrowUpRight size={15} /></Link>

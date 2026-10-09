@@ -230,9 +230,12 @@ def login(data: Login, request: Request, response: Response, db: Session = Depen
         raise HTTPException(429, 'Too many attempts. Try again in 15 minutes.')
     attempts.append(time.monotonic())
     user = db.scalar(select(User).where(User.email == key))
-    valid = passwords.verify(data.password, user.password_hash if user else dummy_hash)
-    if not user or not valid:
-        raise HTTPException(401, 'Incorrect email or password.')
+    if not user:
+        passwords.verify(data.password, dummy_hash)
+        raise HTTPException(404, 'No account found with this email. Please create an account first.')
+    valid = passwords.verify(data.password, user.password_hash)
+    if not valid:
+        raise HTTPException(401, 'Incorrect password. Please try again.')
     login_attempts.pop(key, None)
     set_session(response, user)
     return user_view(user)
@@ -263,8 +266,6 @@ def supabase_login(data: SupabaseLogin, response: Response, db: Session = Depend
         name = email.split('@')[0][:150] or 'CelebrateCG user'
     user = db.scalar(select(User).where(User.email == email))
     if not user:
-        if not data.signup:
-            raise HTTPException(403, 'No CelebrateCG account exists for this Google email. Please create an account first.')
         user = User(
             name=name,
             email=email,

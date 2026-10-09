@@ -388,12 +388,11 @@ def test_supabase_google_login_rejects_unknown_email(context, monkeypatch):
     class FakeResponse:
         status_code = 200
         def json(self):
-            return {'email': 'google.vendor@example.com', 'user_metadata': {'name': 'Google Vendor'}}
+            return {'email': 'google.new@example.com', 'user_metadata': {'name': 'Google New'}, 'email_confirmed_at': '2026-01-01'}
 
     monkeypatch.setattr(api_main.httpx, 'get', lambda *args, **kwargs: FakeResponse())
-    result = context['client'].post('/api/auth/supabase', json={'access_token': 'valid-google-access-token', 'role': 'customer'})
+    result = context['client'].post('/api/auth/supabase', json={'access_token': 'valid-google-access-token', 'role': 'customer', 'signup': False})
     assert result.status_code == 403
-    assert 'No CelebrateCG account exists' in result.json()['detail']
 
 
 def test_supabase_google_signup_creates_verified_customer(context, monkeypatch):

@@ -137,9 +137,11 @@ textarea:focus-visible {
 }
 
 .header.header-scrolled {
-  background: rgba(10, 22, 15, 0.95);
-  border-color: rgba(212, 175, 55, 0.4);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+  background: rgba(8, 18, 12, 0.97);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-color: rgba(212, 175, 55, 0.55);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(212, 175, 55, 0.1) inset;
 }
 
 .brand {
@@ -295,6 +297,25 @@ body:has(.cities-hero) { padding-top: 0; }
   color: #FFFFFF;
   border: 1px solid rgba(212, 175, 55, 0.35);
   box-shadow: 0 8px 22px rgba(20, 60, 36, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.button-primary::after,
+.button-light::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(212, 175, 55, 0.18) 50%, transparent 65%);
+  background-size: 200% 100%;
+  background-position: -100% 0;
+  transition: background-position 0.5s ease;
+  pointer-events: none;
+}
+
+.button-primary:hover::after,
+.button-light:hover::after {
+  background-position: 100% 0;
 }
 
 .button-primary:hover,
@@ -534,15 +555,15 @@ body:has(.cities-hero) { padding-top: 0; }
   border-radius: 14px;
   overflow: hidden;
   box-shadow: var(--brand-shadow-sm);
-  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.36s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.36s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.24s ease;
   position: relative;
 }
 
 .venue-card:hover,
 .venue-preview-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-8px);
   border-color: var(--brand-gold);
-  box-shadow: 0 20px 42px rgba(14, 30, 20, 0.12);
+  box-shadow: 0 24px 52px rgba(14, 30, 20, 0.16), 0 4px 12px rgba(14, 30, 20, 0.08);
 }
 
 .card-image {
@@ -642,11 +663,11 @@ body:has(.cities-hero) { padding-top: 0; }
   height: 5px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.45);
-  transition: all 0.2s ease;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease, border-radius 0.3s ease;
 }
 
 .photo-dot.active {
-  width: 14px;
+  width: 18px;
   background: var(--brand-gold);
   border-radius: 3px;
 }
@@ -947,7 +968,7 @@ body:has(.cities-hero) { padding-top: 0; }
   align-items: center;
   padding: 80px 48px 48px;
   background: var(--brand-forest);
-  margin: 10px 14px 34px;
+  margin: 10px 14px 0;
   border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
@@ -2396,8 +2417,25 @@ footer,
 .site-footer {
   background: var(--brand-forest);
   color: #CBD9CC;
-  border-top: 1.5px solid rgba(212, 175, 55, 0.3);
+  position: relative;
   padding: 56px 56px 36px;
+}
+
+.site-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(212, 175, 55, 0.2) 15%, rgba(212, 175, 55, 0.7) 50%, rgba(212, 175, 55, 0.2) 85%, transparent 100%);
+  background-size: 200% 100%;
+  animation: footerGold 3s ease-in-out forwards;
+}
+
+@keyframes footerGold {
+  from { background-position: 100% 0; opacity: 0; }
+  to { background-position: 0% 0; opacity: 1; }
 }
 
 .site-footer .footer-brand {
@@ -2536,6 +2574,16 @@ img, video, iframe { max-width: 100%; }
     border-radius: 9px;
     color: #FAF8F5;
     font-size: 14px;
+  }
+  .header .mobile-nav-account {
+    background: rgba(212, 175, 55, 0.12);
+    color: var(--brand-gold-light);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .header .mobile-nav-account:hover {
+    background: rgba(212, 175, 55, 0.22);
   }
   .header.menu-open .main-nav a:hover,
   .header.menu-open .main-nav a:focus-visible {
@@ -2685,8 +2733,8 @@ img, video, iframe { max-width: 100%; }
     padding-left: 13px;
     border-radius: 15px;
   }
-  .header .brand { font-size: 21px; }
-  .brand-logo-img { width: 34px; height: 34px; }
+  .header .brand { font-size: 18px; gap: 7px; }
+  .brand-logo-img { width: 32px; height: 32px; }
   .header-actions { gap: 7px; }
   .header .account-link { min-height: 44px; padding: 9px 13px; }
 
@@ -2708,14 +2756,18 @@ img, video, iframe { max-width: 100%; }
     overscroll-behavior-inline: contain;
   }
 
+  /* Hero pages — push content clear of the 70px fixed navbar */
+  .hero-video { padding-top: clamp(90px, 16svh, 120px); padding-bottom: clamp(60px, 12svh, 90px); }
+
   /* Cities hero */
-  .cities-hero-copy { padding: 80px 22px 100px; }
+  .cities-hero-copy { padding: 96px 22px 100px; }
   .city-hero-search { max-width: 100%; }
   .destinations-section, .venue-map-section { padding-top: 52px; padding-bottom: 52px; }
   .destination-card, .destination-card:first-child { min-height: 280px; }
 
   /* Auth */
   .auth-page { width: 100%; margin-top: 28px; padding-right: 20px; padding-left: 20px; }
+  .auth-card { padding: 26px 22px; border-radius: 14px; }
 
   /* Contact form */
   .dynamic-form-card { padding: 28px 22px; }
@@ -2759,6 +2811,29 @@ img, video, iframe { max-width: 100%; }
 
   /* Footer */
   .site-footer { padding-right: 24px; padding-left: 24px; }
+
+  /* Find-venue hero search — pill → stacked block on mobile */
+  .find-venue-copy { padding: 96px 22px 88px; }
+  .find-venue-copy h1 { font-size: clamp(44px, 13vw, 60px); }
+  .find-venue-search {
+    max-width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 12px;
+    padding: 14px;
+    gap: 8px;
+  }
+  .find-venue-search label { padding: 0 4px; }
+  .find-venue-search input { height: 40px; font-size: 16px; }
+  .find-venue-search .button-primary { width: 100%; border-radius: 8px; min-height: 48px; }
+
+  /* Hero actions stacked on mobile */
+  .hero-video .hero-actions { align-items: stretch; flex-direction: column; gap: 12px; }
+  .hero-video .hero-actions > * { width: 100%; justify-content: center; }
+
+  /* Categories hero copy */
+  .categories-hero-copy { padding: 96px 22px 88px; }
+  .categories-hero-copy h1 { font-size: clamp(44px, 13vw, 60px); }
 
   /* Benefits section */
   #benefits { padding: 36px 20px; border-radius: 14px; }
@@ -2825,12 +2900,14 @@ img, video, iframe { max-width: 100%; }
 
 /* ── 390 px — smallest phones ─────────────────────────────────────────────── */
 @media (max-width: 390px) {
-  .header .brand { font-size: 19px; gap: 7px; }
-  .brand-logo-img { width: 32px; height: 32px; }
+  .header .brand { font-size: 16px; gap: 6px; }
+  .brand-logo-img { width: 30px; height: 30px; }
+  .header .brand span { display: none; }
   .mobile-menu-button { width: 44px; height: 44px; }
   .section { padding-right: 15px; padding-left: 15px; }
 
   .role-picker { flex-direction: column; }
+  .auth-card { padding: 20px 16px; }
   .panel, .dynamic-form-card, .booking-now-card { padding: 17px; }
 
   .card-bottom, .price-row { gap: 10px; }
