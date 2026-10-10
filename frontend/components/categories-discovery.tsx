@@ -62,7 +62,7 @@ export default function CategoriesDiscovery() {
         <span className="eyebrow">EXPLORE WHAT’S POSSIBLE</span>
         <h1>Find the perfect<br /><em>place to celebrate.</em></h1>
         <p>Discover villas, farmhouses, resorts, stays and spaces made for unforgettable moments across Chhattisgarh.</p>
-        <Link className="button button-primary" href="#category-gallery">Explore spaces <ArrowUpRight size={16} /></Link>
+        <Link className="button button-primary" href="/find-venue">Explore venues <ArrowUpRight size={16} /></Link>
       </div>
       <span className="categories-hero-caption">Spaces for every kind of celebration.</span>
     </section>

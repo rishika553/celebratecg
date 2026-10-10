@@ -78,12 +78,7 @@ export default function HomePage() {
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const params = new URLSearchParams();
-    if (q) params.set('city', q);
-    if (eventType) params.set('category', eventType);
-    if (date) params.set('booking_date', date);
-    if (guests) params.set('guests', guests);
-    router.push(`/find-venue${params.size ? `?${params}` : ''}`);
+    router.push('/find-venue');
   }
 
   return <main>
