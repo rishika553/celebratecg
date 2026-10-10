@@ -2718,20 +2718,21 @@ img, video, iframe { max-width: 100%; }
 
 /* ── 760 px — mobile ──────────────────────────────────────────────────────── */
 @media (max-width: 760px) {
-  body { padding-top: 82px; }
-  body:has(.hero-video),
-  body:has(.find-venue-hero),
-  body:has(.categories-hero),
-  body:has(.cities-hero) { padding-top: 0; }
+  body { padding-top: 0; }
 
   .section { width: 100%; padding-right: 18px; padding-left: 18px; }
 
   .header {
-    top: 8px;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    z-index: 10;
     width: calc(100% - 16px);
     height: 62px;
     padding-left: 13px;
-    border-radius: 15px;
+    border-radius: 999px;
+    margin: 8px auto 0;
   }
   .header .brand { font-size: 18px; gap: 7px; }
   .brand-logo-img { width: 32px; height: 32px; }
@@ -2756,11 +2757,11 @@ img, video, iframe { max-width: 100%; }
     overscroll-behavior-inline: contain;
   }
 
-  /* Hero pages — push content clear of the 70px fixed navbar */
-  .hero-video { padding-top: clamp(90px, 16svh, 120px); padding-bottom: clamp(60px, 12svh, 90px); }
+  /* Hero pages — navbar is static on mobile, no offset needed */
+  .hero-video { min-height: 0; margin: 8px 8px 0; border-radius: 15px; padding-top: clamp(32px, 6svh, 52px); padding-bottom: clamp(32px, 6svh, 52px); }
 
   /* Cities hero */
-  .cities-hero-copy { padding: 96px 22px 100px; }
+  .cities-hero-copy { padding: 32px 22px 36px; }
   .city-hero-search { max-width: 100%; }
   .destinations-section, .venue-map-section { padding-top: 52px; padding-bottom: 52px; }
   .destination-card, .destination-card:first-child { min-height: 280px; }
@@ -2813,7 +2814,9 @@ img, video, iframe { max-width: 100%; }
   .site-footer { padding-right: 24px; padding-left: 24px; }
 
   /* Find-venue hero search — pill → stacked block on mobile */
-  .find-venue-copy { padding: 96px 22px 88px; }
+  .find-venue-copy { padding: 26px 20px 32px; }
+  .find-venue-copy h1 { font-size: clamp(32px, 9.5vw, 44px); margin-bottom: 10px; }
+  .find-venue-copy > p { font-size: 13px; line-height: 1.6; margin-bottom: 0; }
   .find-venue-copy h1 { font-size: clamp(44px, 13vw, 60px); }
   .find-venue-search {
     max-width: 100%;
@@ -2831,9 +2834,12 @@ img, video, iframe { max-width: 100%; }
   .hero-video .hero-actions { align-items: stretch; flex-direction: column; gap: 12px; }
   .hero-video .hero-actions > * { width: 100%; justify-content: center; }
 
-  /* Categories hero copy */
-  .categories-hero-copy { padding: 96px 22px 88px; }
-  .categories-hero-copy h1 { font-size: clamp(44px, 13vw, 60px); }
+  /* Categories hero — compact on mobile, next section peeks below */
+  .categories-hero { min-height: 0; margin-top: 10px; }
+  .categories-hero-copy { padding: 26px 20px 30px; }
+  .categories-hero-copy h1 { font-size: clamp(32px, 9.5vw, 44px); margin-bottom: 10px; }
+  .categories-hero-copy p { font-size: 13px; line-height: 1.6; margin-bottom: 20px; }
+  .categories-hero-copy .button { padding: 12px 22px; font-size: 14px; }
 
   /* Benefits section */
   #benefits { padding: 36px 20px; border-radius: 14px; }
@@ -2847,10 +2853,12 @@ img, video, iframe { max-width: 100%; }
   .header .account-link { display: none; }
 
   /* Hero */
-  .hero-video { min-height: max(560px, 90svh); }
+  .hero-video { min-height: 0; }
   .hero-video .hero-copy { width: 100%; }
   .hero-video .hero-actions { align-items: stretch; flex-direction: column; }
   .hero-video .hero-actions > * { width: 100%; justify-content: center; }
+  /* Hide find-venue hero search on mobile — search is in the filter panel below */
+  .find-venue-search { display: none; }
 
   /* Section heading */
   .section-heading { flex-direction: column; }

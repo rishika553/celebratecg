@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ArrowUpRight, CalendarDays, Check, MapPin, Search, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, CalendarDays, MapPin, Search, Sparkles, Users } from 'lucide-react';
 import CelebrationMark from '@/components/celebration-mark';
 import VenuePreviews from '@/components/venue-previews';
 import SiteSections from '@/components/site-sections';
@@ -96,8 +96,7 @@ export default function HomePage() {
         <span className="eyebrow hero-reveal hero-reveal-1"><span className="tiny-star"><CelebrationMark size={21} /></span> CHHATTISGARH’S BIGGEST CELEBRATION BOOKING PLATFORM</span>
         <h1 className="hero-title hero-reveal hero-reveal-2"><span>Plan. Book.</span><em>Celebrate.</em></h1>
         <p className="hero-reveal hero-reveal-3">Discover, compare and book verified venues, memorable stays and professional event services across Chhattisgarh—all in one seamless experience.</p>
-        <div className="hero-note hero-reveal hero-reveal-4"><span className="note-icon"><Check size={14} /></span> Launching {site.launch}</div>
-        <div className="hero-actions hero-reveal hero-reveal-5">
+        <div className="hero-actions hero-reveal hero-reveal-4">
           <a className="button button-primary hero-primary-cta" href={site.signup}>Create an account <ArrowUpRight size={16} /></a>
           <Link className="text-button hero-secondary-cta" href="/signup?role=vendor">List your property <ArrowUpRight size={15} /></Link>
         </div>

@@ -150,7 +150,7 @@ html, body { overflow-x: clip; }
   .waitlist-section { margin-left: 32px; margin-right: 32px; }
 }
 @media(max-width:760px) {
-  .hero-video { width: calc(100% - 8px); min-height: 560px; margin: 6px 0 6px 8px; display: flex; border-radius: 14px; padding: clamp(40px, 8svh, 62px) 22px clamp(54px, 11svh, 88px); }
+  .hero-video { width: calc(100% - 16px); min-height: 0; margin: 8px auto 0; display: flex; border-radius: 15px; padding: clamp(32px, 6svh, 52px) 22px; }
   .hero-video h1 { font-size: clamp(50px, 15vw, 64px); }
   .hero-video .hero-copy > p { font-size: 15px; line-height: 1.7; }
   .hero-video-shade { background: linear-gradient(180deg, #1213114D 0%, transparent 48%, #1213118C 100%), linear-gradient(90deg, #121411F0 0%, #151613C7 72%, #1516138C 100%); }
@@ -487,7 +487,7 @@ html, body { overflow-x: clip; }
     margin-top: 8px;
     padding: 7px 8px 7px 14px;
   }
-  body:has(.hero-video) .header { margin-bottom: -70px; }
+  body:has(.hero-video) .header { margin-bottom: 0; }
   .header .brand { min-width: 0; font-size: 21px; }
   .header .brand-icon { width: 29px; height: 29px; }
   .header .main-nav { display: none; }
@@ -571,7 +571,7 @@ html, body { overflow-x: clip; }
 }
 @media(max-width:430px) {
   .account-link { display: none; }
-  .hero-video { min-height: 520px; }
+  .hero-video { min-height: 0; }
   .hero-video h1 { font-size: clamp(47px,15vw,58px); }
   .hero-video .hero-copy > p { font-size: 15px; }
   .hero-video .hero-actions { align-items: flex-start; flex-direction: column; }
@@ -662,10 +662,10 @@ body:has(.categories-page) .header {
   .categories-cta { margin-left: 22px; margin-right: 22px; }
 }
 @media(max-width:760px) {
-  body:has(.categories-page) .header { margin-bottom: -70px; }
-  .categories-hero { width: calc(100% - 8px); min-height: max(620px, calc(100svh - 12px)); margin: 6px 0 6px 8px; border-radius: 14px; }
-  .categories-hero-copy { padding: 80px 24px 100px; }
-  .categories-hero-copy h1 { font-size: clamp(50px, 14vw, 66px); }
+  body:has(.categories-page) .header { margin-bottom: 0; }
+  .categories-hero { width: calc(100% - 16px); min-height: 0; margin: 8px auto 0; border-radius: 14px; }
+  .categories-hero-copy { padding: 26px 20px 30px; }
+  .categories-hero-copy h1 { font-size: clamp(38px, 11vw, 52px); }
   .categories-hero-copy p { font-size: 15px; }
   .categories-hero-caption { left: 22px; right: auto; bottom: 22px; max-width: calc(100% - 44px); }
   .categories-catalogue { padding-top: 64px; padding-bottom: 64px; }
@@ -785,14 +785,14 @@ body:has(.cities-page) .header { position: relative; z-index: 50; margin-bottom:
   /* destination-filters, venue-map-layout, mobile-map-toggle handled by brand-theme.css */
 }
 @media(max-width:760px) {
-  body:has(.cities-page) .header { margin-bottom: -70px; }
-  .cities-hero { width: calc(100% - 8px); min-height: max(620px,calc(100svh - 12px)); margin: 6px 0 6px 8px; border-radius: 14px; }
-  .cities-hero-copy { padding: 80px 22px 96px; }
+  body:has(.cities-page) .header { margin-bottom: 0; }
+  .cities-hero { width: calc(100% - 16px); min-height: 0; margin: 8px auto 0; border-radius: 14px; }
+  .cities-hero-copy { padding: 36px 22px 60px; }
   .cities-hero-copy h1 { font-size: clamp(50px,14vw,66px); }
   .cities-hero-copy > p { font-size: 15px; }
   /* city-hero-search: brand-theme.css forces flex; just ensure font size here */
   .city-hero-search input { font-size: 16px !important; }
-  .destinations-section, .venue-map-section { padding-top: 52px; padding-bottom: 52px; }
+  .destinations-section, .venue-map-section { padding-top: 24px; padding-bottom: 52px; }
   /* map-venue-select: smaller photo column at 760px */
   .map-venue-select { grid-template-columns: 96px minmax(0,1fr); padding: 14px 16px 0; }
   .map-venue-photo { min-height: 96px; }
@@ -849,10 +849,10 @@ body:has(.find-venue-page) .header { position: relative; z-index: 50; margin-bot
   .marketplace-filter-panel { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
 @media(max-width:760px) {
-  body:has(.find-venue-page) .header { margin-bottom: -70px; }
-  .find-venue-hero { width: calc(100% - 8px); min-height: max(640px,calc(100svh - 12px)); margin: 6px 0 6px 8px; border-radius: 14px; }
-  .find-venue-copy { padding: 84px 24px 94px; }
-  .find-venue-copy h1 { font-size: clamp(50px,14vw,66px); }
+  body:has(.find-venue-page) .header { margin-bottom: 0; }
+  .find-venue-hero { width: calc(100% - 16px); min-height: 0; margin: 8px auto 0; border-radius: 14px; }
+  .find-venue-copy { padding: 26px 20px 32px; }
+  .find-venue-copy h1 { font-size: clamp(32px,9.5vw,44px); margin-bottom: 10px; }
   .find-venue-copy > p { font-size: 15px; }
   .find-venue-search { grid-template-columns: 1fr; }
   .venue-marketplace { padding-top: 62px; padding-bottom: 66px; }
@@ -940,7 +940,7 @@ body:has(.find-venue-page) .header { position: relative; z-index: 50; margin-bot
   body { font-size: 15px; }
   .section { padding-left: 18px; padding-right: 18px; }
   .header {
-    position: sticky;
+    position: relative !important;
     z-index: 100;
     display: grid;
     width: calc(100% - 16px);
@@ -951,7 +951,7 @@ body:has(.find-venue-page) .header { position: relative; z-index: 50; margin-bot
   body:has(.categories-page) .header,
   body:has(.cities-page) .header,
   body:has(.find-venue-page) .header,
-  body:has(.hero-video) .header { margin-bottom: -70px; }
+  body:has(.hero-video) .header { margin-bottom: 0; }
   .header .main-nav { grid-column: 1 / -1; }
   .header .main-nav a { color: var(--cream); font-size: 14px; }
   .header .button-outline { border-color: #716761; color: var(--cream); }
@@ -995,7 +995,7 @@ body:has(.find-venue-page) .header { position: relative; z-index: 50; margin-bot
   h1 { font-size: 48px; }
   h2 { font-size: 34px; }
   .brand { max-width: 190px; }
-  .hero-video { min-height: 500px; padding-left: 20px; padding-right: 20px; }
+  .hero-video { min-height: 0; padding-left: 20px; padding-right: 20px; }
   .hero-video h1,
   .categories-hero-copy h1,
   .cities-hero-copy h1,
