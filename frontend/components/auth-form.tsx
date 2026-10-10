@@ -97,7 +97,7 @@ export default function AuthForm({ signup = false, adminOnly = false }: Props) {
         <label>Email address<input name="email" type="email" autoComplete="email" required placeholder="you@example.com" /></label>
         <label>Password<input name="password" type="password" autoComplete={signup ? 'new-password' : 'current-password'} minLength={signup ? 10 : 8} maxLength={128} required placeholder={signup ? 'At least 10 characters' : 'At least 8 characters'} /></label>
         {signup && role === 'vendor' && <p className="form-note">Our team reviews host accounts before you can add a venue.</p>}
-        {error && <p className="error-message" role="alert">{error}{error.includes('create an account') && <> <Link href="/signup" style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: '3px' }}>Create an account</Link></>}</p>}
+        {error && <p className="error-message" role="alert">{error}{(error.includes('create an account') || error.includes('No account found')) && <> <Link href="/signup" style={{ color: 'inherit', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: '3px' }}>Create an account →</Link></>}</p>}
         <button className="button button-primary full" disabled={busy || googleBusy}>{busy ? 'Just a moment…' : signup ? 'Create account' : 'Sign in'}<ArrowRight size={17} /></button>
       </form>
       {!adminOnly && <p className="auth-switch">{signup ? 'Already part of the celebration?' : 'New around here?'} <Link href={signup ? '/login' : '/signup'}>{signup ? 'Sign in' : 'Create an account'}</Link></p>}

@@ -31,8 +31,7 @@ const fallbackCategories: Category[] = venueVisuals.map((item, index) => ({
 }));
 
 function ImageCard({ category, index }: { category: DisplayCategory; index: number }) {
-  const href = `/find-venue?category=${encodeURIComponent(category.slug)}`;
-  return <Link className={`editorial-category-card category-card-${index + 1}`} href={href}>
+  return <Link className={`editorial-category-card category-card-${index + 1}`} href="/find-venue">
     <img src={imageSrc(category.image)} alt={`${category.name} in Chhattisgarh`} loading={index < 2 ? 'eager' : 'lazy'} />
     <span className="editorial-card-shade" aria-hidden="true" />
     <span className="editorial-card-number">{String(index + 1).padStart(2, '0')}</span>
